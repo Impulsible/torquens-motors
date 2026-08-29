@@ -1,0 +1,632 @@
+@import "tailwindcss";
+
+/* ✅ Custom properties for your theme */
+@theme {
+  /* Colors */
+  --color-obsidian: #08090B;
+  --color-graphite: #12151B;
+  --color-charcoal: #1A1E26;
+  --color-inset: #0E1014;
+  --color-border: #1F242D;
+  --color-active-border: #333B49;
+  
+  --color-gold: #C5A059;
+  --color-gold-hover: #E2B96C;
+  --color-gold-muted: rgba(197, 160, 89, 0.15);
+  --color-gold-border: rgba(197, 160, 89, 0.30);
+  
+  --color-emerald: #10B981;
+  --color-emerald-bg: rgba(16, 185, 129, 0.10);
+  --color-emerald-border: rgba(16, 185, 129, 0.30);
+  
+  --color-primary: #F8F9FA;
+  --color-secondary: #9EA5B5;
+  --color-muted: #545B6B;
+
+  /* Fonts */
+  --font-serif: var(--font-serif), Georgia, serif;
+  --font-sans: var(--font-sans), Inter, sans-serif;
+
+  /* Shadows */
+  --shadow-goldGlow: 0 0 25px -5px rgba(197, 160, 89, 0.25);
+  --shadow-goldGlowSm: 0 0 12px -2px rgba(197, 160, 89, 0.20);
+  --shadow-card: 0 12px 30px -10px rgba(0, 0, 0, 0.7);
+  --shadow-dropdown: 0 20px 40px -10px rgba(0, 0, 0, 0.9);
+
+  /* Background Images */
+  --background-image-checkerboard: linear-gradient(45deg, #010101 25%, #23262F 25%, #23262F 50%, #010101 50%, #010101 75%, #23262F 75%, #23262F 100%);
+  --background-image-checkerboard-light: linear-gradient(45deg, #D4DCDF 25%, #23262F 25%, #23262F 50%, #D4DCDF 50%, #D4DCDF 75%, #23262F 75%, #23262F 100%);
+  --background-image-gold-gradient: linear-gradient(135deg, #C5A059 0%, #E2B96C 50%, #9A7B3E 100%);
+  --background-image-radial-hero: radial-gradient(circle at 50% 0%, rgba(197, 160, 89, 0.08) 0%, rgba(8, 9, 11, 0) 70%);
+  --background-image-gold-overlay: linear-gradient(180deg, rgba(197, 160, 89, 0.05) 0%, transparent 100%);
+
+  /* Background Size */
+  --background-size-checkerboard: 40px 40px;
+}
+
+/* ✅ Custom base styles */
+@layer base {
+  /* Custom scrollbar for luxury automotive feel */
+  ::-webkit-scrollbar {
+    width: 6px;
+    height: 6px;
+  }
+
+  ::-webkit-scrollbar-track {
+    background: #0E1014;
+  }
+
+  ::-webkit-scrollbar-thumb {
+    background: #1F242D;
+    border-radius: 3px;
+  }
+
+  ::-webkit-scrollbar-thumb:hover {
+    background: #C5A059;
+  }
+
+  /* Text Selection Color */
+  ::selection {
+    background: #C5A059;
+    color: #08090B;
+  }
+
+  /* Base Document Configuration */
+  html {
+    scroll-behavior: smooth;
+    color-scheme: dark;
+  }
+
+  body {
+    background-color: var(--color-obsidian);
+    color: var(--color-primary);
+    font-family: var(--font-sans);
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+    font-feature-settings: "cv02", "cv03", "cv04", "cv11";
+  }
+
+  /* Typography Defaults */
+  h1, h2, h3, h4, h5, h6 {
+    font-family: var(--font-serif);
+    letter-spacing: -0.025em;
+  }
+
+  /* Accessibility Focus Rings */
+  *:focus-visible {
+    outline: 2px solid var(--color-gold);
+    outline-offset: 2px;
+  }
+
+  /* Smooth link transitions */
+  a {
+    transition: color 0.2s;
+  }
+
+  /* Better image rendering */
+  img {
+    display: block;
+    max-width: 100%;
+    image-rendering: -webkit-optimize-contrast;
+  }
+
+  /* Animation utilities */
+  .animate-in {
+    animation: animate-in 0.7s ease-out forwards;
+  }
+
+  .slide-in-from-left {
+    opacity: 0;
+    transform: translateX(-30px);
+  }
+
+  .slide-in-from-bottom {
+    opacity: 0;
+    transform: translateY(30px);
+  }
+
+  .delay-100 {
+    animation-delay: 100ms;
+  }
+
+  .delay-200 {
+    animation-delay: 200ms;
+  }
+
+  .delay-300 {
+    animation-delay: 300ms;
+  }
+
+  .delay-400 {
+    animation-delay: 400ms;
+  }
+
+  .delay-500 {
+    animation-delay: 500ms;
+  }
+
+  @keyframes animate-in {
+    from {
+      opacity: 0;
+      transform: translateX(-30px);
+    }
+    to {
+      opacity: 1;
+      transform: translateX(0);
+    }
+  }
+
+  @keyframes fade-in-up {
+    from {
+      opacity: 0;
+      transform: translateY(30px);
+    }
+    to {
+      opacity: 1;
+      transform: translateY(0);
+    }
+  }
+
+  @keyframes scroll-dot {
+    0%, 100% {
+      transform: translateY(0);
+      opacity: 1;
+    }
+    50% {
+      transform: translateY(6px);
+      opacity: 0.5;
+    }
+  }
+
+  .animate-scroll-dot {
+    animation: scroll-dot 1.5s ease-in-out infinite;
+  }
+
+  /* Shimmer animation for skeletons */
+  @keyframes shimmer {
+    0% {
+      background-position: -200% 0;
+    }
+    100% {
+      background-position: 200% 0;
+    }
+  }
+
+  .animate-shimmer {
+    animation: shimmer 2s ease-in-out infinite;
+    background-size: 200% 100%;
+  }
+
+  /* Zoom in animation for modals */
+  @keyframes zoom-in {
+    from {
+      opacity: 0;
+      transform: scale(0.95);
+    }
+    to {
+      opacity: 1;
+      transform: scale(1);
+    }
+  }
+
+  .zoom-in {
+    animation: zoom-in 0.2s ease-out forwards;
+  }
+
+  /* Slide in from right for toast */
+  @keyframes slide-in-from-right {
+    from {
+      opacity: 0;
+      transform: translateX(100%);
+    }
+    to {
+      opacity: 1;
+      transform: translateX(0);
+    }
+  }
+
+  .slide-in-from-right {
+    animation: slide-in-from-right 0.3s ease-out forwards;
+  }
+
+  /* Gold pulse animation */
+  @keyframes gold-pulse {
+    0%, 100% {
+      box-shadow: 0 0 20px -5px rgba(197, 160, 89, 0.2);
+    }
+    50% {
+      box-shadow: 0 0 40px -5px rgba(197, 160, 89, 0.4);
+    }
+  }
+
+  .animate-gold-pulse {
+    animation: gold-pulse 2s ease-in-out infinite;
+  }
+}
+
+/* ✅ Custom component styles */
+@layer components {
+  /* Container Architecture */
+  .container-torquens {
+    max-width: 80rem;
+    margin-left: auto;
+    margin-right: auto;
+    padding-left: 1rem;
+    padding-right: 1rem;
+  }
+
+  @media (min-width: 640px) {
+    .container-torquens {
+      padding-left: 1.5rem;
+      padding-right: 1.5rem;
+    }
+  }
+
+  @media (min-width: 1024px) {
+    .container-torquens {
+      padding-left: 2rem;
+      padding-right: 2rem;
+    }
+  }
+
+  /* Section Headers */
+  .section-title {
+    font-size: 1.875rem;
+    font-family: var(--font-serif);
+    font-weight: 300;
+    color: var(--color-primary);
+    letter-spacing: -0.025em;
+  }
+
+  @media (min-width: 768px) {
+    .section-title {
+      font-size: 2.25rem;
+    }
+  }
+
+  @media (min-width: 1024px) {
+    .section-title {
+      font-size: 3rem;
+    }
+  }
+
+  .section-subtitle {
+    color: var(--color-secondary);
+    font-size: 0.75rem;
+    font-family: var(--font-sans);
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    font-weight: 600;
+  }
+
+  @media (min-width: 768px) {
+    .section-subtitle {
+      font-size: 0.875rem;
+    }
+  }
+
+  /* Gold Accent Hover Underline */
+  .gold-underline {
+    position: relative;
+  }
+
+  .gold-underline::after {
+    content: '';
+    position: absolute;
+    bottom: 0;
+    left: 0;
+    width: 100%;
+    height: 1px;
+    background-color: var(--color-gold);
+    transform: scaleX(0);
+    transform-origin: left;
+    transition: transform 0.3s;
+  }
+
+  .gold-underline:hover::after {
+    transform: scaleX(1);
+  }
+
+  /* Vehicle Card Base Styling */
+  .vehicle-card {
+    background-color: var(--color-graphite);
+    border-radius: 0.5rem;
+    overflow: hidden;
+    border: 1px solid var(--color-border);
+    transition: all 0.3s;
+  }
+
+  .vehicle-card:hover {
+    border-color: var(--color-active-border);
+    box-shadow: var(--shadow-card);
+    transform: translateY(-4px);
+  }
+
+  /* Vehicle card with image hover effect */
+  .vehicle-card-image {
+    position: relative;
+    overflow: hidden;
+    background-color: var(--color-charcoal);
+  }
+
+  .vehicle-card-image img {
+    transition: transform 0.7s;
+  }
+
+  .vehicle-card-image:hover img {
+    transform: scale(1.05);
+  }
+
+  /* Premium Buttons */
+  .btn-primary {
+    background-color: var(--color-gold);
+    color: var(--color-obsidian);
+    font-weight: 600;
+    padding: 0.75rem 1.5rem;
+    border-radius: 0.375rem;
+    transition: all 0.3s;
+  }
+
+  .btn-primary:hover {
+    background-color: var(--color-gold-hover);
+    box-shadow: var(--shadow-goldGlow);
+  }
+
+  .btn-primary:active {
+    transform: scale(0.98);
+  }
+
+  .btn-primary:disabled {
+    opacity: 0.5;
+    pointer-events: none;
+  }
+
+  .btn-secondary {
+    background-color: var(--color-charcoal);
+    border: 1px solid var(--color-border);
+    color: var(--color-primary);
+    font-weight: 500;
+    padding: 0.75rem 1.5rem;
+    border-radius: 0.375rem;
+    transition: all 0.3s;
+  }
+
+  .btn-secondary:hover {
+    border-color: var(--color-gold);
+    color: var(--color-gold);
+    background-color: var(--color-graphite);
+  }
+
+  .btn-secondary:active {
+    transform: scale(0.98);
+  }
+
+  .btn-outline {
+    border: 1px solid var(--color-gold);
+    color: var(--color-gold);
+    font-weight: 500;
+    padding: 0.75rem 1.5rem;
+    border-radius: 0.375rem;
+    transition: all 0.3s;
+  }
+
+  .btn-outline:hover {
+    background-color: var(--color-gold);
+    color: var(--color-obsidian);
+    box-shadow: var(--shadow-goldGlowSm);
+  }
+
+  .btn-outline:active {
+    transform: scale(0.98);
+  }
+
+  /* Small button variants */
+  .btn-primary-sm {
+    color-scheme: btn-primary;
+    padding: 0.5rem 1rem;
+    font-size: 0.875rem;
+  }
+
+  .btn-secondary-sm {
+    color-scheme: btn-secondary;
+    padding: 0.5rem 1rem;
+    font-size: 0.875rem;
+  }
+
+  /* Glassmorphism Panel */
+  .glass-panel {
+    background-color: rgba(18, 21, 27, 0.8);
+    backdrop-filter: blur(12px);
+    border: 1px solid var(--color-border);
+  }
+
+  /* Verified Badge Styling */
+  .badge-verified {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.375rem;
+    padding: 0.25rem 0.625rem;
+    border-radius: 9999px;
+    background-color: var(--color-emerald-bg);
+    border: 1px solid var(--color-emerald-border);
+    color: var(--color-emerald);
+    font-size: 0.75rem;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+  }
+
+  /* Status badges for vehicle listings */
+  .badge-status {
+    display: inline-flex;
+    align-items: center;
+    padding: 0.25rem 0.625rem;
+    border-radius: 9999px;
+    font-size: 0.75rem;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+  }
+
+  .badge-status-new {
+    color-scheme: badge-status;
+    background-color: var(--color-emerald-bg);
+    border: 1px solid var(--color-emerald-border);
+    color: var(--color-emerald);
+  }
+
+  .badge-status-sold {
+    color-scheme: badge-status;
+    background-color: rgba(239, 68, 68, 0.1);
+    border: 1px solid rgba(239, 68, 68, 0.3);
+    color: #f87171;
+  }
+
+  .badge-status-featured {
+    color-scheme: badge-status;
+    background-color: var(--color-gold-muted);
+    border: 1px solid var(--color-gold-border);
+    color: var(--color-gold);
+  }
+
+  /* Form inputs with luxury styling */
+  .input-luxury {
+    width: 100%;
+    background-color: var(--color-charcoal);
+    border: 1px solid var(--color-border);
+    border-radius: 0.375rem;
+    padding: 0.75rem 1rem;
+    color: var(--color-primary);
+    transition: all 0.2s;
+  }
+
+  .input-luxury:focus {
+    outline: none;
+    border-color: var(--color-gold);
+    box-shadow: 0 0 0 1px rgba(197, 160, 89, 0.3);
+  }
+
+  .input-luxury::placeholder {
+    color: var(--color-muted);
+  }
+
+  .label-luxury {
+    display: block;
+    font-size: 0.875rem;
+    font-weight: 500;
+    color: var(--color-secondary);
+    margin-bottom: 0.375rem;
+  }
+
+  /* Select styling */
+  .select-luxury {
+    color-scheme: input-luxury;
+    appearance: none;
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12'%3E%3Cpath fill='%239EA5B5' d='M6 8L1 3h10z'/%3E%3C/svg%3E");
+    background-repeat: no-repeat;
+    background-position: right 1rem center;
+    padding-right: 2.5rem;
+  }
+
+  /* Luxury divider */
+  .divider-luxury {
+    border: 0;
+    height: 1px;
+    background: linear-gradient(to right, transparent, rgba(197, 160, 89, 0.3), transparent);
+  }
+
+  /* Vehicle card enter animations */
+  .vehicle-card-enter {
+    animation: fade-in-up 0.5s ease-out forwards;
+  }
+
+  .vehicle-card-enter:nth-child(1) { animation-delay: 0ms; }
+  .vehicle-card-enter:nth-child(2) { animation-delay: 100ms; }
+  .vehicle-card-enter:nth-child(3) { animation-delay: 200ms; }
+  .vehicle-card-enter:nth-child(4) { animation-delay: 300ms; }
+  .vehicle-card-enter:nth-child(5) { animation-delay: 400ms; }
+  .vehicle-card-enter:nth-child(6) { animation-delay: 500ms; }
+}
+
+/* ✅ Custom utilities */
+@layer utilities {
+  /* Hide scrollbar for clean horizontal car carousels */
+  .no-scrollbar::-webkit-scrollbar {
+    display: none;
+  }
+  .no-scrollbar {
+    -ms-overflow-style: none;
+    scrollbar-width: none;
+  }
+
+  /* Text gradient for gold headings */
+  .text-gold-gradient {
+    background: linear-gradient(135deg, #C5A059 0%, #E2B96C 50%, #9A7B3E 100%);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+  }
+
+  /* Subtle gold border glow */
+  .border-gold-glow {
+    border: 1px solid rgba(197, 160, 89, 0.2);
+    box-shadow: var(--shadow-goldGlowSm);
+  }
+
+  /* Smooth hover lift effect */
+  .hover-lift {
+    transition: transform 0.3s;
+  }
+
+  .hover-lift:hover {
+    transform: translateY(-4px);
+  }
+
+  /* Background utilities */
+  .bg-checkerboard {
+    background-image: var(--background-image-checkerboard);
+    background-size: var(--background-size-checkerboard);
+  }
+
+  .bg-checkerboard-light {
+    background-image: var(--background-image-checkerboard-light);
+    background-size: var(--background-size-checkerboard);
+  }
+
+  .bg-gold-gradient {
+    background-image: var(--background-image-gold-gradient);
+  }
+
+  .bg-radial-hero {
+    background-image: var(--background-image-radial-hero);
+  }
+
+  .bg-gold-overlay {
+    background-image: var(--background-image-gold-overlay);
+  }
+
+  /* Grid for vehicle listings */
+  .grid-vehicles {
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: 1.5rem;
+  }
+
+  @media (min-width: 640px) {
+    .grid-vehicles {
+      grid-template-columns: repeat(2, 1fr);
+    }
+  }
+
+  @media (min-width: 1024px) {
+    .grid-vehicles {
+      grid-template-columns: repeat(3, 1fr);
+    }
+  }
+
+  @media (min-width: 1280px) {
+    .grid-vehicles {
+      grid-template-columns: repeat(4, 1fr);
+    }
+  }
+}
