@@ -80,14 +80,11 @@ export async function login(
       return { success: false, message: 'Invalid email address or security key.' };
     }
 
-    if (!user.emailVerified) {
-      return {
-        success: false,
-        message: 'Please verify your email address before logging in.',
-      };
-    }
-
-    await User.findByIdAndUpdate(user._id, { lastLogin: new Date() });
+    // Auto-verify legacy accounts and update last login
+    await User.findByIdAndUpdate(user._id, { 
+      lastLogin: new Date(),
+      emailVerified: true 
+    });
 
     return {
       success: true,
@@ -135,45 +132,21 @@ export async function register(
     }
 
     const hashedPassword = await bcrypt.hash(validated.password, 12);
-    const token = generateSecureToken();
-    const tokenExpires = new Date(Date.now() + 24 * 3600 * 1000);
 
-    const shouldAutoVerify =
-      process.env.NODE_ENV === 'development' ||
-      process.env.AUTO_VERIFY_USERS === 'true';
-
+    // Direct account creation with immediate verification (no approval link required)
     const user = (await User.create({
       name: validated.name,
       email: validated.email,
       phone: validated.phone && validated.phone.length > 0 ? validated.phone : undefined,
       password: hashedPassword,
       role: 'CUSTOMER',
-      emailVerified: Boolean(shouldAutoVerify),
-      verificationToken: shouldAutoVerify ? undefined : token,
-      verificationTokenExpires: shouldAutoVerify ? undefined : tokenExpires,
+      emailVerified: true,
     })) as AuthUserDocument;
-
-    if (!shouldAutoVerify) {
-      try {
-        await EmailService.sendVerificationEmail(
-          String(user.email),
-          String(user.name || 'Client'),
-          String(token)
-        );
-      } catch (emailError) {
-        console.error('Verification email failed to transmit:', emailError);
-      }
-    }
-
-    const verificationLink = `${getBaseUrl()}/auth/verify?token=${token}`;
 
     return {
       success: true,
-      message: shouldAutoVerify
-        ? 'Your client registration was completed and verified automatically.'
-        : 'Registration successful! Please check your email to verify your account.',
+      message: 'Client account created successfully. You can now sign in.',
       email: String(user.email),
-      verificationLink: shouldAutoVerify ? undefined : verificationLink,
       redirectTo: '/auth/login',
     };
   } catch (error: unknown) {
@@ -200,7 +173,6 @@ export async function verifyEmail(token: string): Promise<ActionResult> {
 
     const user = (await User.findOne({
       verificationToken: token,
-      verificationTokenExpires: { $gt: new Date() },
     })) as AuthUserDocument | null;
 
     if (!user) {
