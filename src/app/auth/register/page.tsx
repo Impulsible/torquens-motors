@@ -8,7 +8,6 @@ import Image from 'next/image';
 import { useRouter } from 'next/navigation';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
-import { z } from 'zod';
 import {
   User,
   Mail,
@@ -31,25 +30,8 @@ import {
 
 import { Button } from '@/components/ui/Button';
 import { Input } from '@/components/ui/Input';
+import { registerSchema, type RegisterInput } from '@/utils/validators';
 import { register as registerAction } from '@/actions/auth';
-
-const registerSchema = z
-  .object({
-    name: z.string().min(2, 'Name must be at least 2 characters').max(50, 'Name cannot exceed 50 characters'),
-    email: z.string().email('Please enter a valid email address'),
-    phone: z.string().optional(),
-    password: z.string().min(8, 'Password must be at least 8 characters'),
-    confirmPassword: z.string().min(8, 'Please confirm your password'),
-    termsAccepted: z.boolean().refine((val) => val === true, {
-      message: 'You must accept the Terms of Protocol and Privacy Policy',
-    }),
-  })
-  .refine((data) => data.password === data.confirmPassword, {
-    message: "Passwords don't match",
-    path: ['confirmPassword'],
-  });
-
-type RegisterFormData = z.infer<typeof registerSchema>;
 
 interface RegistrationResponse {
   success: boolean;
@@ -58,7 +40,6 @@ interface RegistrationResponse {
   data?: unknown;
 }
 
-// Curated membership pillars for client registry
 const REGISTRY_PRIVILEGES = [
   {
     icon: Compass,
@@ -99,7 +80,7 @@ function RegisterContent() {
     setValue,
     watch,
     formState: { errors, isSubmitting },
-  } = useForm<RegisterFormData>({
+  } = useForm<RegisterInput>({
     resolver: zodResolver(registerSchema),
     defaultValues: {
       name: '',
@@ -114,7 +95,7 @@ function RegisterContent() {
 
   const termsAccepted = watch('termsAccepted');
 
-  const onSubmit = async (data: RegisterFormData) => {
+  const onSubmit = async (data: RegisterInput) => {
     setAuthError(null);
     setSuccess(null);
 
@@ -125,6 +106,8 @@ function RegisterContent() {
       if (data.phone) formData.append('phone', data.phone);
       formData.append('password', data.password);
       formData.append('confirmPassword', data.confirmPassword);
+      // ✅ FIXED: Explicitly append termsAccepted to FormData so the server receives it
+      formData.append('termsAccepted', data.termsAccepted ? 'true' : 'false');
 
       const result = (await registerAction(null, formData)) as RegistrationResponse | undefined;
 
@@ -183,7 +166,7 @@ function RegisterContent() {
 
         <div className="relative z-10 w-full max-w-md animate-slide-up">
           <div className="p-8 sm:p-10 rounded-2xl bg-graphite/95 border border-border/80 text-center shadow-dropdown backdrop-blur-md relative overflow-hidden">
-            <div className="absolute top-0 left-0 right-0 h-0.5 bg-linear-to-r from-transparent via-gold to-transparent" />
+            <div className="absolute top-0 left-0 right-0 h-0.5  from-transparent via-gold to-transparent" />
 
             <div className="w-16 h-16 rounded-full bg-gold/10 border border-gold/30 flex items-center justify-center mx-auto mb-6 shadow-glow">
               <CheckCircle2 className="h-8 w-8 text-gold" />
@@ -216,7 +199,7 @@ function RegisterContent() {
                 <button
                   type="button"
                   onClick={handleVerifyClick}
-                  className="text-gold text-xs hover:underline w-full text-center"
+                  className="text-gold text-xs hover:underline w-full text-center font-mono"
                 >
                   Click here to verify your email (Development Only)
                 </button>
@@ -234,16 +217,16 @@ function RegisterContent() {
 
         {/* Console Dock */}
         <div className="fixed bottom-6 left-1/2 -translate-x-1/2 z-50 w-full max-w-70 sm:max-w-sm px-4">
-          <div className="flex items-center justify-between gap-4 px-4 py-2.5 rounded-full bg-obsidian/65 backdrop-blur-xl border border-white/10 shadow-[0_8px_32px_rgba(0,0,0,0.5)] transition-all duration-500 hover:border-gold/30 group/dock">
+          <div className="flex items-center justify-between gap-4 px-4 py-2.5 rounded-full bg-obsidian/65 backdrop-blur-xl border border-white/10 shadow-[0_8px_32px_rgba(0,0,0,0.5)]">
             <Link
               href="/"
-              className="inline-flex items-center gap-2 text-[10px] font-mono tracking-widest uppercase text-secondary hover:text-gold transition-colors duration-300 focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-gold/50 rounded-full py-0.5"
+              className="inline-flex items-center gap-2 text-[10px] font-mono tracking-widest uppercase text-secondary hover:text-gold transition-colors duration-300"
             >
-              <ArrowLeft className="h-3.5 w-3.5 group-hover/dock:-translate-x-1 transition-transform duration-300" />
+              <ArrowLeft className="h-3.5 w-3.5" />
               <span>Showroom</span>
             </Link>
             <span className="h-3 w-px bg-white/10" aria-hidden="true" />
-            <span className="text-[9px] font-mono tracking-wider text-muted select-none uppercase">
+            <span className="text-[9px] font-mono tracking-wider text-muted uppercase">
               Geneva Registry
             </span>
           </div>
@@ -259,31 +242,22 @@ function RegisterContent() {
     <div className="relative min-h-screen bg-obsidian text-primary overflow-hidden">
       <div className="grid lg:grid-cols-2 min-h-screen">
         
-        {/* ─────────────────────────────────────────────────────── */}
-        {/*  LEFT — Cinematic Provenance Panel                      */}
-        {/* ─────────────────────────────────────────────────────── */}
-        <div className="relative hidden lg:flex flex-col justify-between p-12 xl:p-16 pb-28 xl:pb-28 overflow-hidden border-r border-border/40">
-          {/* Background image of bespoke automotive craftsmanship */}
+        {/* LEFT — Hero Image */}
+        <div className="relative hidden lg:flex flex-col justify-between p-12 xl:p-16 pb-28 overflow-hidden border-r border-border/40">
           <div className="absolute inset-0 z-0">
             <Image
               src="https://images.unsplash.com/photo-1617788138017-80ad40651399?q=80&w=2070&auto=format&fit=crop"
               alt="Bespoke hypercar interior craftsmanship"
               fill
               priority
-              className="object-cover object-center scale-105 animate-slow-zoom"
+              className="object-cover object-center scale-105"
             />
             <div className="absolute inset-0 bg-linear-to-br from-obsidian via-obsidian/75 to-obsidian/45" />
-            <div className="absolute inset-0 bg-linear-to-t from-obsidian via-transparent to-transparent" />
-            <div className="absolute inset-0 bg-linear-to-r from-transparent to-obsidian/60" />
           </div>
 
-          {/* Gold vertical accent bar */}
-          <div className="absolute left-0 top-1/2 -translate-y-1/2 h-32 w-px bg-linear-to-b from-transparent via-gold to-transparent" />
-
-          {/* Top: Brand mark */}
           <div className="relative z-10">
-            <Link href="/" className="inline-flex items-center gap-3 group">
-              <div className="h-10 w-10 rounded-sm border border-gold/40 flex items-center justify-center bg-obsidian/60 backdrop-blur-sm group-hover:border-gold transition-colors duration-500">
+            <Link href="/" className="inline-flex items-center gap-3">
+              <div className="h-10 w-10 rounded-sm border border-gold/40 flex items-center justify-center bg-obsidian/60 backdrop-blur-sm">
                 <span className="font-serif text-gold text-lg">T</span>
               </div>
               <div className="flex flex-col leading-none">
@@ -295,7 +269,6 @@ function RegisterContent() {
             </Link>
           </div>
 
-          {/* Middle: Editorial Header */}
           <div className="relative z-10 max-w-lg">
             <div className="mb-6 inline-flex items-center gap-2 px-3 py-1 rounded-full bg-gold/10 border border-gold/20">
               <Sparkles className="h-3 w-3 text-gold" />
@@ -313,11 +286,10 @@ function RegisterContent() {
             </p>
           </div>
 
-          {/* Bottom: Dynamic Registry Privileges Showcase */}
           <div className="relative z-10">
             <div className="space-y-3 pt-6 border-t border-white/10">
               <div className="text-[10px] font-mono tracking-[0.25em] uppercase text-gold/80 mb-3">
-                Registry Benefits
+                Registry Privileges
               </div>
               <div className="grid grid-cols-3 gap-3">
                 {REGISTRY_PRIVILEGES.map((item, idx) => {
@@ -343,17 +315,9 @@ function RegisterContent() {
           </div>
         </div>
 
-        {/* ─────────────────────────────────────────────────────── */}
-        {/*  RIGHT — Registration Form Panel                        */}
-        {/* ─────────────────────────────────────────────────────── */}
+        {/* RIGHT — Registration Form */}
         <div className="relative flex items-center justify-center px-6 py-16 pb-28 sm:px-12 lg:px-16 xl:px-20 overflow-y-auto">
-          <div
-            aria-hidden="true"
-            className="pointer-events-none absolute top-1/3 right-0 w-96 h-96 bg-gold/3 blur-[120px] rounded-full"
-          />
-
           <div className="relative w-full max-w-md animate-fade-in my-auto">
-            {/* Header */}
             <div className="mb-8">
               <div className="flex items-center gap-3 mb-6">
                 <div className="h-px w-8 bg-gold" />
@@ -366,26 +330,24 @@ function RegisterContent() {
                 Request Private Vault
               </h1>
               <p className="text-xs sm:text-sm text-secondary font-sans leading-relaxed">
-                Establish your client credentials to access reserved vehicles and private auctions.
+                Establish your client credentials to access reserved vehicles and private allocations.
               </p>
             </div>
 
-            {/* Error Banner */}
             {authError && (
               <div
                 role="alert"
-                className="mb-6 flex items-start gap-3 p-3.5 rounded-md bg-red-500/8 border-l-2 border-red-500/60 text-red-400 text-xs leading-relaxed animate-fade-in"
+                className="mb-6 flex items-start gap-3 p-3.5 rounded-md bg-red-500/10 border-l-2 border-red-500/60 text-red-400 text-xs leading-relaxed"
               >
-                <AlertCircle size={15} className="shrink-0 mt-0.5" />
+                <AlertCircle size={16} className="shrink-0 mt-0.5" />
                 <span>{authError}</span>
               </div>
             )}
 
-            {/* Form */}
             <form onSubmit={handleSubmit(onSubmit)} noValidate className="space-y-4">
               <Input
                 label="Full Legal Name"
-                placeholder="e.g. Harrison Sterling"
+                placeholder="e.g. Prince Henry Osuagwu"
                 autoComplete="name"
                 leftIcon={<User className="h-4 w-4 text-muted" />}
                 {...register('name')}
@@ -398,7 +360,7 @@ function RegisterContent() {
                 <Input
                   label="Email Address"
                   type="email"
-                  placeholder="client@torquens.com"
+                  placeholder="henryosuagwu22@gmail.com"
                   autoComplete="email"
                   leftIcon={<Mail className="h-4 w-4 text-muted" />}
                   {...register('email')}
@@ -410,7 +372,7 @@ function RegisterContent() {
                 <Input
                   label="Phone (Optional)"
                   type="tel"
-                  placeholder="+44 20 7946 0991"
+                  placeholder="+2348160262300"
                   autoComplete="tel"
                   leftIcon={<Phone className="h-4 w-4 text-muted" />}
                   {...register('phone')}
@@ -431,7 +393,7 @@ function RegisterContent() {
                       type="button"
                       onClick={() => setShowPassword(!showPassword)}
                       tabIndex={-1}
-                      className="text-muted hover:text-gold transition-colors focus:outline-none p-0.5 rounded"
+                      className="text-muted hover:text-gold transition-colors focus:outline-none p-0.5"
                     >
                       {showPassword ? <EyeOff size={16} /> : <Eye size={16} />}
                     </button>
@@ -453,7 +415,7 @@ function RegisterContent() {
                       type="button"
                       onClick={() => setShowConfirmPassword(!showConfirmPassword)}
                       tabIndex={-1}
-                      className="text-muted hover:text-gold transition-colors focus:outline-none p-0.5 rounded"
+                      className="text-muted hover:text-gold transition-colors focus:outline-none p-0.5"
                     >
                       {showConfirmPassword ? <EyeOff size={16} /> : <Eye size={16} />}
                     </button>
@@ -473,7 +435,9 @@ function RegisterContent() {
                       type="checkbox"
                       className="peer sr-only"
                       checked={termsAccepted}
-                      onChange={(e) => setValue('termsAccepted', e.target.checked, { shouldValidate: true })}
+                      onChange={(e) =>
+                        setValue('termsAccepted', e.target.checked, { shouldValidate: true })
+                      }
                       disabled={isSubmitting}
                     />
                     <div
@@ -508,7 +472,7 @@ function RegisterContent() {
                       .
                     </span>
                     {errors.termsAccepted && (
-                      <span className="text-xs text-red-400 mt-1 animate-fade-in">
+                      <span className="text-xs text-red-400 mt-1">
                         {errors.termsAccepted.message}
                       </span>
                     )}
@@ -526,15 +490,11 @@ function RegisterContent() {
               >
                 <span>Establish Private Vault</span>
                 {!isSubmitting && (
-                  <ArrowRight
-                    size={15}
-                    className="group-hover:translate-x-1 transition-transform duration-300"
-                  />
+                  <ArrowRight size={15} className="group-hover:translate-x-1 transition-transform duration-300" />
                 )}
               </Button>
             </form>
 
-            {/* OAuth Options */}
             <div className="relative my-6">
               <div className="absolute inset-0 flex items-center">
                 <div className="w-full border-t border-border/50" />
@@ -551,7 +511,7 @@ function RegisterContent() {
                 type="button"
                 onClick={() => handleOAuthSignIn('google')}
                 disabled={isSubmitting}
-                className="flex items-center justify-center gap-2 h-10 rounded-md border border-border/70 bg-graphite/30 hover:bg-graphite/60 hover:border-gold/30 transition-all duration-300 text-xs font-medium text-secondary hover:text-primary disabled:opacity-50 disabled:cursor-not-allowed focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-gold/40"
+                className="flex items-center justify-center gap-2 h-10 rounded-md border border-border/70 bg-graphite/30 hover:bg-graphite/60 transition-all text-xs font-medium text-secondary hover:text-primary cursor-pointer"
               >
                 <svg className="h-3.5 w-3.5" viewBox="0 0 24 24">
                   <path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z" />
@@ -566,7 +526,7 @@ function RegisterContent() {
                 type="button"
                 onClick={() => handleOAuthSignIn('apple')}
                 disabled={isSubmitting}
-                className="flex items-center justify-center gap-2 h-10 rounded-md border border-border/70 bg-graphite/30 hover:bg-graphite/60 hover:border-gold/30 transition-all duration-300 text-xs font-medium text-secondary hover:text-primary disabled:opacity-50 disabled:cursor-not-allowed focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-gold/40"
+                className="flex items-center justify-center gap-2 h-10 rounded-md border border-border/70 bg-graphite/30 hover:bg-graphite/60 transition-all text-xs font-medium text-secondary hover:text-primary cursor-pointer"
               >
                 <svg className="h-3.5 w-3.5 fill-current" viewBox="0 0 24 24">
                   <path d="M18.71 19.5c-.83 1.24-1.71 2.45-3.05 2.47-1.34.03-1.77-.79-3.29-.79-1.53 0-2 .77-3.27.82-1.31.05-2.3-1.32-3.14-2.53C4.25 17 2.94 12.45 4.7 9.39c.87-1.52 2.43-2.48 4.12-2.51 1.28-.02 2.5.87 3.29.87.78 0 2.26-1.07 3.81-.91.65.03 2.47.26 3.64 1.98-.09.06-2.17 1.28-2.15 3.81.03 3.02 2.65 4.03 2.68 4.04-.03.07-.42 1.44-1.38 2.83M15.97 6.37c.61-.75 1.04-1.8 0.92-2.85-.9.04-2.02.6-2.66 1.35-.57.66-.99 1.74-.86 2.76 1.01.08 2-.51 2.6-.96z" />
@@ -575,13 +535,12 @@ function RegisterContent() {
               </button>
             </div>
 
-            {/* Existing Account Footer */}
             <div className="mt-8 pt-5 border-t border-border/40 text-center">
               <p className="text-xs text-secondary font-sans">
                 Already possess vault access?{' '}
                 <Link
                   href="/auth/login"
-                  className="font-semibold text-gold hover:text-gold-hover transition-colors ml-1 focus-visible:outline-none focus-visible:underline"
+                  className="font-semibold text-gold hover:text-gold-hover transition-colors ml-1"
                 >
                   Authenticate here →
                 </Link>
@@ -591,23 +550,19 @@ function RegisterContent() {
         </div>
       </div>
 
-      {/* ═══════════════════════════════════════════════════════════ */}
-      {/*  BOTTOM CONSOLE DOCK — The Ergonomic "Showroom" Pill        */}
-      {/* ═══════════════════════════════════════════════════════════ */}
+      {/* Dock Pill */}
       <div className="fixed bottom-6 left-1/2 -translate-x-1/2 z-50 w-full max-w-70 sm:max-w-sm px-4">
-        <div className="flex items-center justify-between gap-4 px-4 py-2.5 rounded-full bg-obsidian/65 backdrop-blur-xl border border-white/10 shadow-[0_8px_32px_rgba(0,0,0,0.5)] transition-all duration-500 hover:border-gold/30 group/dock">
+        <div className="flex items-center justify-between gap-4 px-4 py-2.5 rounded-full bg-obsidian/65 backdrop-blur-xl border border-white/10 shadow-card">
           <Link
             href="/"
-            className="inline-flex items-center gap-2 text-[10px] font-mono tracking-widest uppercase text-secondary hover:text-gold transition-colors duration-300 focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-gold/50 rounded-full py-0.5"
+            className="inline-flex items-center gap-2 text-[10px] font-mono tracking-widest uppercase text-secondary hover:text-gold transition-colors"
           >
-            <ArrowLeft className="h-3.5 w-3.5 group-hover/dock:-translate-x-1 transition-transform duration-300" />
+            <ArrowLeft className="h-3.5 w-3.5" />
             <span>Showroom</span>
           </Link>
-
-          <span className="h-3 w-px bg-white/10" aria-hidden="true" />
-
-          <span className="text-[9px] font-mono tracking-wider text-muted select-none uppercase">
-            Geneva Registry
+          <span className="h-3 w-px bg-white/10" />
+          <span className="text-[9px] font-mono tracking-wider text-muted uppercase">
+            TORQUENS MOTORS
           </span>
         </div>
       </div>

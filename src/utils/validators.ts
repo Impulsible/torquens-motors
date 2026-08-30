@@ -1,15 +1,7 @@
 import { z } from 'zod';
 
-/* -------------------------------------------------------------------------- */
-/*                               SHARED HELPERS                               */
-/* -------------------------------------------------------------------------- */
-
 const phoneRegex = /^\+?[1-9]\d{1,14}$/;
 const vinRegex = /^[A-HJ-NPR-Z0-9]{17}$/i;
-
-/* -------------------------------------------------------------------------- */
-/*                        1. AUTHENTICATION & USER SCHEMAS                    */
-/* -------------------------------------------------------------------------- */
 
 export const loginSchema = z.object({
   email: z
@@ -38,7 +30,6 @@ export const registerSchema = z
       .email('Please provide a valid email address')
       .toLowerCase(),
 
-    // Phone is completely optional. Empty string is allowed.
     phone: z
       .string()
       .trim()
@@ -56,11 +47,8 @@ export const registerSchema = z
       .regex(/[A-Z]/, 'Password must contain at least one uppercase letter')
       .regex(/[0-9]/, 'Password must contain at least one number'),
 
-    confirmPassword: z
-      .string()
-      .min(1, 'Please confirm your password'),
+    confirmPassword: z.string().min(1, 'Please confirm your password'),
 
-    // Accept boolean OR string "true"/"on"/"1"
     termsAccepted: z
       .union([z.boolean(), z.string()])
       .transform((v) => v === true || v === 'true' || v === 'on' || v === '1')
@@ -177,10 +165,6 @@ export const vehicleSchema = z.object({
   isVerified: z.boolean().default(true),
 });
 
-/* -------------------------------------------------------------------------- */
-/*                     3. INVENTORY SEARCH & FILTER SCHEMA                    */
-/* -------------------------------------------------------------------------- */
-
 export const vehicleFilterSchema = z.object({
   search: z.string().optional(),
   make: z.string().optional(),
@@ -200,10 +184,6 @@ export const vehicleFilterSchema = z.object({
   page: z.coerce.number().int().min(1).default(1),
   limit: z.coerce.number().int().min(1).max(50).default(12),
 });
-
-/* -------------------------------------------------------------------------- */
-/*                  4. VIP CONCIERGE & TEST DRIVE INQUIRIES                   */
-/* -------------------------------------------------------------------------- */
 
 export const enquiryTypeEnum = z.enum([
   'GENERAL_INQUIRY',
@@ -241,10 +221,6 @@ export const testDriveBookingSchema = z.object({
   driverLicenseNumber: z.string().trim().min(5, 'Driver license number is required'),
   notes: z.string().trim().max(500).optional(),
 });
-
-/* -------------------------------------------------------------------------- */
-/*                       5. EXPORTED TYPES (TYPE INFERENCE)                   */
-/* -------------------------------------------------------------------------- */
 
 export type LoginInput = z.infer<typeof loginSchema>;
 export type RegisterInput = z.infer<typeof registerSchema>;

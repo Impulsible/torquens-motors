@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-unused-vars */
 'use server';
 
 import crypto from 'crypto';
@@ -8,10 +9,6 @@ import { User } from '@/models/User';
 import { EmailService } from '@/services/email';
 import { registerSchema } from '@/utils/validators';
 import type { Document } from 'mongoose';
-
-// -----------------------------------------------------------------------------
-// TYPES & INTERFACES
-// -----------------------------------------------------------------------------
 
 export interface ActionResult<T = unknown> {
   success: boolean;
@@ -37,10 +34,6 @@ export interface AuthUserDocument extends Document {
   lastLogin?: Date;
 }
 
-// -----------------------------------------------------------------------------
-// HELPERS
-// -----------------------------------------------------------------------------
-
 function generateSecureToken(): string {
   return crypto.randomBytes(32).toString('hex');
 }
@@ -62,10 +55,6 @@ function getBaseUrl(): string {
   );
 }
 
-// -----------------------------------------------------------------------------
-// LOGIN
-// -----------------------------------------------------------------------------
-
 export async function login(
   _prevState: unknown,
   formData: FormData
@@ -78,27 +67,12 @@ export async function login(
     if (!email) return { success: false, message: 'Email address is required.' };
     if (!password) return { success: false, message: 'Password is required.' };
 
-    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-    if (!emailRegex.test(email)) {
-      return { success: false, message: 'Please enter a valid email address.' };
-    }
-
     await connectToDatabase();
 
-    const user = (await User.findOne({ email }).select(
-      '+password'
-    )) as AuthUserDocument | null;
+    const user = (await User.findOne({ email }).select('+password')) as AuthUserDocument | null;
 
-    if (!user) {
+    if (!user || !user.password) {
       return { success: false, message: 'Invalid email address or security key.' };
-    }
-
-    if (!user.password) {
-      return {
-        success: false,
-        message:
-          'This account uses social authentication. Please sign in with Google or Apple.',
-      };
     }
 
     const isPasswordValid = await bcrypt.compare(password, user.password);
@@ -109,8 +83,7 @@ export async function login(
     if (!user.emailVerified) {
       return {
         success: false,
-        message:
-          'Please verify your email address before logging in. Check your inbox for the verification link.',
+        message: 'Please verify your email address before logging in.',
       };
     }
 
@@ -118,24 +91,16 @@ export async function login(
 
     return {
       success: true,
-      message: 'Authentication successful. Redirecting to dossier...',
+      message: 'Authentication successful.',
       redirectTo,
     };
   } catch (error: unknown) {
-    console.error('Login Server Action Error:', error);
     return {
       success: false,
-      message:
-        error instanceof Error
-          ? error.message
-          : 'An unexpected authentication error occurred.',
+      message: error instanceof Error ? error.message : 'An unexpected error occurred.',
     };
   }
 }
-
-// -----------------------------------------------------------------------------
-// REGISTER (Fixed — all schema fields properly passed)
-// -----------------------------------------------------------------------------
 
 export async function register(
   _prevState: unknown,
@@ -149,37 +114,14 @@ export async function register(
     const confirmPassword = asString(formData.get('confirmPassword'));
     const termsAccepted = asBool(formData.get('termsAccepted'));
 
-    // Fast pre-Zod field guards
-    if (!name) {
-      return { success: false, message: 'Name is required.' };
-    }
-    if (!email) {
-      return { success: false, message: 'Email address is required.' };
-    }
-    if (!password) {
-      return { success: false, message: 'Password is required.' };
-    }
-    if (!confirmPassword) {
-      return { success: false, message: 'Please confirm your password.' };
-    }
-    if (password !== confirmPassword) {
-      return { success: false, message: 'Passwords do not match.' };
-    }
-    if (!termsAccepted) {
-      return {
-        success: false,
-        message: 'You must accept the terms and privacy policy.',
-      };
-    }
-
-    // ✅ Pass ALL fields expected by registerSchema
+    // Validate using Zod
     const validated = registerSchema.parse({
       name,
       email,
       phone,
       password,
       confirmPassword,
-      termsAccepted: true,
+      termsAccepted,
     });
 
     await connectToDatabase();
@@ -215,12 +157,11 @@ export async function register(
       try {
         await EmailService.sendVerificationEmail(
           String(user.email),
-          String(user.name || validated.name || 'Client'),
+          String(user.name || 'Client'),
           String(token)
         );
       } catch (emailError) {
         console.error('Verification email failed to transmit:', emailError);
-        // Do not fail account creation if email fails
       }
     }
 
@@ -229,7 +170,7 @@ export async function register(
     return {
       success: true,
       message: shouldAutoVerify
-        ? 'Your client registration was completed and verified automatically. You can sign in now.'
+        ? 'Your client registration was completed and verified automatically.'
         : 'Registration successful! Please check your email to verify your account.',
       email: String(user.email),
       verificationLink: shouldAutoVerify ? undefined : verificationLink,
@@ -238,35 +179,22 @@ export async function register(
   } catch (error: unknown) {
     if (error instanceof z.ZodError) {
       const issue = error.issues[0];
-      console.error('Register Zod issues:', error.issues);
       return {
         success: false,
-        message: issue
-          ? `${issue.path?.join('.') || 'field'}: ${issue.message}`
-          : 'Validation error. Please check your details.',
+        message: issue ? issue.message : 'Validation error. Please check your details.',
       };
     }
 
-    console.error('Registration Server Action Error:', error);
     return {
       success: false,
-      message:
-        error instanceof Error
-          ? error.message
-          : 'An unexpected error occurred during registration.',
+      message: error instanceof Error ? error.message : 'An unexpected error occurred.',
     };
   }
 }
 
-// -----------------------------------------------------------------------------
-// VERIFY EMAIL
-// -----------------------------------------------------------------------------
-
 export async function verifyEmail(token: string): Promise<ActionResult> {
   try {
-    if (!token || typeof token !== 'string') {
-      return { success: false, message: 'Verification token is required.' };
-    }
+    if (!token) return { success: false, message: 'Verification token is required.' };
 
     await connectToDatabase();
 
@@ -286,108 +214,48 @@ export async function verifyEmail(token: string): Promise<ActionResult> {
 
     return {
       success: true,
-      message: 'Email verified successfully! You can now log in to your account.',
+      message: 'Email verified successfully! You can now log in.',
     };
   } catch (error) {
-    console.error('Verification Server Action Error:', error);
-    return {
-      success: false,
-      message: 'An error occurred during verification. Please try again.',
-    };
+    return { success: false, message: 'An error occurred during verification.' };
   }
 }
 
-// -----------------------------------------------------------------------------
-// FORGOT PASSWORD
-// -----------------------------------------------------------------------------
-
-export async function forgotPassword(
-  _prevState: unknown,
-  formData: FormData
-): Promise<ActionResult> {
+export async function forgotPassword(_prevState: unknown, formData: FormData): Promise<ActionResult> {
   try {
     const email = asString(formData.get('email')).trim().toLowerCase();
-
-    if (!email) {
-      return { success: false, message: 'Email address is required.' };
-    }
+    if (!email) return { success: false, message: 'Email is required.' };
 
     await connectToDatabase();
 
     const user = (await User.findOne({ email })) as AuthUserDocument | null;
-
-    if (!user) {
-      return {
-        success: false,
-        message: 'No client account found registered under this email address.',
-      };
-    }
+    if (!user) return { success: false, message: 'No client account found for this email.' };
 
     const resetToken = generateSecureToken();
-    const resetTokenExpires = new Date(Date.now() + 3600000);
-
     user.resetToken = resetToken;
-    user.resetTokenExpires = resetTokenExpires;
+    user.resetTokenExpires = new Date(Date.now() + 3600000);
     await user.save();
 
     try {
-      await EmailService.sendPasswordResetEmail(
-        String(user.email),
-        String(user.name || 'Client'),
-        String(resetToken)
-      );
-    } catch (emailError) {
-      console.error('Failed to send reset email:', emailError);
-      return {
-        success: false,
-        message: 'Failed to dispatch reset email. Please try again later.',
-      };
+      await EmailService.sendPasswordResetEmail(String(user.email), String(user.name || 'Client'), String(resetToken));
+    } catch {
+      return { success: false, message: 'Failed to send reset email.' };
     }
 
-    return {
-      success: true,
-      message: 'Password reset authorization link sent to your email address.',
-    };
-  } catch (error) {
-    console.error('Forgot Password Server Action Error:', error);
-    return {
-      success: false,
-      message: 'An unexpected security error occurred. Please try again.',
-    };
+    return { success: true, message: 'Password reset link sent to your email address.' };
+  } catch {
+    return { success: false, message: 'Security error occurred.' };
   }
 }
 
-// -----------------------------------------------------------------------------
-// RESET PASSWORD
-// -----------------------------------------------------------------------------
-
-export async function resetPassword(
-  _prevState: unknown,
-  formData: FormData
-): Promise<ActionResult> {
+export async function resetPassword(_prevState: unknown, formData: FormData): Promise<ActionResult> {
   try {
     const token = asString(formData.get('token'));
     const password = asString(formData.get('password'));
     const confirmPassword = asString(formData.get('confirmPassword'));
 
-    if (!token) {
-      return { success: false, message: 'Reset authorization token is missing.' };
-    }
-    if (!password) {
-      return { success: false, message: 'Password is required.' };
-    }
-    if (!confirmPassword) {
-      return { success: false, message: 'Please confirm your password.' };
-    }
-    if (password !== confirmPassword) {
-      return { success: false, message: 'Passwords do not match.' };
-    }
-    if (password.length < 8) {
-      return {
-        success: false,
-        message: 'Password must be at least 8 characters long.',
-      };
-    }
+    if (!token || !password || !confirmPassword) return { success: false, message: 'Missing fields.' };
+    if (password !== confirmPassword) return { success: false, message: 'Passwords do not match.' };
 
     await connectToDatabase();
 
@@ -396,38 +264,19 @@ export async function resetPassword(
       resetTokenExpires: { $gt: new Date() },
     })) as AuthUserDocument | null;
 
-    if (!user) {
-      return { success: false, message: 'Invalid or expired password reset token.' };
-    }
+    if (!user) return { success: false, message: 'Invalid or expired token.' };
 
     user.password = await bcrypt.hash(password, 12);
     user.resetToken = undefined;
     user.resetTokenExpires = undefined;
     await user.save();
 
-    return {
-      success: true,
-      message:
-        'Password reset successfully! You may now sign in with your new security key.',
-      redirectTo: '/auth/login',
-    };
-  } catch (error) {
-    console.error('Reset Password Server Action Error:', error);
-    return {
-      success: false,
-      message: 'An unexpected error occurred while resetting your password.',
-    };
+    return { success: true, message: 'Password reset successfully.', redirectTo: '/auth/login' };
+  } catch {
+    return { success: false, message: 'An error occurred.' };
   }
 }
 
-// -----------------------------------------------------------------------------
-// LOGOUT
-// -----------------------------------------------------------------------------
-
 export async function logout(): Promise<ActionResult> {
-  return {
-    success: true,
-    message: 'Logged out successfully.',
-    redirectTo: '/auth/login',
-  };
+  return { success: true, message: 'Logged out successfully.', redirectTo: '/auth/login' };
 }
