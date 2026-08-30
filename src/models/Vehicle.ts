@@ -168,8 +168,20 @@ VehicleSchema.statics.findPublished = async function() {
   return this.find({ status: 'PUBLISHED' });
 };
 
-// Create or get model
-export const Vehicle: Model<IVehicleDocument> = 
-  mongoose.models.Vehicle || mongoose.model<IVehicleDocument>('Vehicle', VehicleSchema);
+// ✅ Fix: Safe model creation with fallback
+let Vehicle: Model<IVehicleDocument>;
 
+try {
+  // Try to get existing model
+  Vehicle = mongoose.model<IVehicleDocument>('Vehicle');
+} catch {
+  // If it doesn't exist, create it
+  Vehicle = mongoose.model<IVehicleDocument>('Vehicle', VehicleSchema);
+}
+
+// ✅ Alternative: Using the cached models pattern
+// const Vehicle = mongoose.models.Vehicle as Model<IVehicleDocument> || 
+//   mongoose.model<IVehicleDocument>('Vehicle', VehicleSchema);
+
+export { Vehicle };
 export default Vehicle;

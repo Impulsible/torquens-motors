@@ -19,8 +19,10 @@ import { Button } from '@/components/ui/Button';
 import { Card } from '@/components/ui/Card';
 import { formatCurrency } from '@/utils/helpers';
 import { cn } from '@/utils/cn';
+import { useComparison } from '@/contexts/ComparisonContext';
 
 export interface Vehicle {
+  power: number;
   id: string;
   slug: string;
   make: string;
@@ -45,6 +47,8 @@ export interface VehicleCardProps {
   isCompared?: boolean;
   onFavoriteToggle?: (id: string) => void;
   onCompareToggle?: (id: string) => void;
+  onCompare?: (id: string) => void;
+  showCompare?: boolean;
   className?: string;
 }
 
@@ -56,11 +60,18 @@ export function VehicleCard({
   isCompared = false,
   onFavoriteToggle,
   onCompareToggle,
+  onCompare,
+  showCompare = true,
   className,
 }: VehicleCardProps) {
   const [imageLoaded, setImageLoaded] = useState(false);
   const [favorite, setFavorite] = useState(isFavorited);
   const [compared, setCompared] = useState(isCompared);
+
+  // Comparison context
+  const { addVehicle, removeVehicle, isInComparison, count, maxVehicles } = useComparison();
+  const isInCompare = isInComparison(vehicle.id);
+  const canAddToCompare = count < maxVehicles;
 
   const isVerified = vehicle.verified === 'VERIFIED' || vehicle.verified === true;
   const isSold = vehicle.status?.toUpperCase() === 'SOLD';
@@ -78,8 +89,23 @@ export function VehicleCard({
   const handleCompareClick = (e: React.MouseEvent) => {
     e.preventDefault();
     e.stopPropagation();
+    
+    // Update local state
     setCompared((prev) => !prev);
+    
+    // Use the comparison context
+    if (isInCompare) {
+      removeVehicle(vehicle.id);
+    } else {
+      addVehicle(vehicle.id).catch((error) => {
+        console.error('Failed to add to comparison:', error);
+        // Revert local state if add fails
+        setCompared((prev) => !prev);
+      });
+    }
+    
     onCompareToggle?.(vehicle.id);
+    onCompare?.(vehicle.id);
   };
 
   return (
@@ -164,20 +190,23 @@ export function VehicleCard({
         {/* Floating Glassmorphic Quick Action Controls (Reveals on Hover) */}
         <div className="absolute bottom-3 right-3 left-3 flex items-center justify-end gap-2 z-10 opacity-0 translate-y-2 transition-all duration-300 ease-luxury group-hover:opacity-100 group-hover:translate-y-0">
           {/* Compare Toggle */}
-          <button
-            type="button"
-            onClick={handleCompareClick}
-            aria-label="Compare vehicle"
-            title="Compare Vehicle Specs"
-            className={cn(
-              'flex h-8 w-8 items-center justify-center rounded-md border backdrop-blur-md transition-all duration-200',
-              compared
-                ? 'bg-gold border-gold text-obsidian shadow-goldGlowSm'
-                : 'bg-obsidian/80 border-border text-secondary hover:text-primary hover:border-gold/40'
-            )}
-          >
-            <GitCompare className="h-3.5 w-3.5" />
-          </button>
+          {showCompare && (
+            <button
+              type="button"
+              onClick={handleCompareClick}
+              aria-label="Compare vehicle"
+              title={isInCompare ? 'Remove from comparison' : 'Add to comparison'}
+              className={cn(
+                'flex h-8 w-8 items-center justify-center rounded-md border backdrop-blur-md transition-all duration-200',
+                isInCompare || compared
+                  ? 'bg-gold border-gold text-obsidian shadow-goldGlowSm'
+                  : 'bg-obsidian/80 border-border text-secondary hover:text-primary hover:border-gold/40'
+              )}
+              disabled={!isInCompare && !canAddToCompare}
+            >
+              <GitCompare className="h-3.5 w-3.5" />
+            </button>
+          )}
 
           {/* Favorite Toggle */}
           <button

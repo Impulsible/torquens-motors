@@ -6,6 +6,11 @@ import { IUser, UserRole } from '@/types';
 export interface IUserDocument extends Omit<IUser, 'id'>, Document {
   _id: string; // Mongoose uses _id instead of id
   comparePassword(candidatePassword: string): Promise<boolean>;
+  // ✅ Add verification token fields
+  verificationToken?: string;
+  verificationTokenExpires?: Date;
+  resetToken?: string;
+  resetTokenExpires?: Date;
 }
 
 const UserSchema = new Schema<IUserDocument>(
@@ -55,6 +60,23 @@ const UserSchema = new Schema<IUserDocument>(
       type: Date,
       default: null,
     },
+    // ✅ Add verification token fields
+    verificationToken: {
+      type: String,
+      select: false,
+    },
+    verificationTokenExpires: {
+      type: Date,
+      select: false,
+    },
+    resetToken: {
+      type: String,
+      select: false,
+    },
+    resetTokenExpires: {
+      type: Date,
+      select: false,
+    },
     preferences: {
       type: {
         currency: { type: String, default: 'NGN' },
@@ -73,6 +95,11 @@ const UserSchema = new Schema<IUserDocument>(
         delete ret._id;
         delete ret.password;
         delete ret.__v;
+        // ✅ Remove sensitive fields from JSON output
+        delete ret.verificationToken;
+        delete ret.verificationTokenExpires;
+        delete ret.resetToken;
+        delete ret.resetTokenExpires;
         return ret;
       },
     },
@@ -82,6 +109,11 @@ const UserSchema = new Schema<IUserDocument>(
         delete ret._id;
         delete ret.password;
         delete ret.__v;
+        // ✅ Remove sensitive fields from object output
+        delete ret.verificationToken;
+        delete ret.verificationTokenExpires;
+        delete ret.resetToken;
+        delete ret.resetTokenExpires;
         return ret;
       },
     },
@@ -92,6 +124,9 @@ const UserSchema = new Schema<IUserDocument>(
 UserSchema.index({ email: 1 });
 UserSchema.index({ role: 1 });
 UserSchema.index({ createdAt: -1 });
+// ✅ Add indexes for token lookups
+UserSchema.index({ verificationToken: 1 });
+UserSchema.index({ resetToken: 1 });
 
 // Method to compare passwords (will be implemented with bcrypt)
 UserSchema.methods.comparePassword = async function(

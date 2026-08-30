@@ -1,7 +1,9 @@
 import mongoose, { Schema, Document, Model } from 'mongoose';
 import { IComparison } from '@/types';
 
-export type IComparisonDocument = IComparison & Document;
+export interface IComparisonDocument extends Omit<IComparison, 'id'>, Document {
+  // Add any additional methods here if needed
+}
 
 const ComparisonSchema = new Schema<IComparisonDocument>(
   {
@@ -37,5 +39,16 @@ ComparisonSchema.pre('save', function(next) {
 ComparisonSchema.index({ user: 1 });
 ComparisonSchema.index({ createdAt: -1 });
 
-export const Comparison: Model<IComparisonDocument> = 
-  mongoose.models.Comparison || mongoose.model<IComparisonDocument>('Comparison', ComparisonSchema);
+// ✅ Fix: Safe model creation
+let Comparison: Model<IComparisonDocument>;
+
+try {
+  // Try to get existing model
+  Comparison = mongoose.model<IComparisonDocument>('Comparison');
+} catch {
+  // If it doesn't exist, create it
+  Comparison = mongoose.model<IComparisonDocument>('Comparison', ComparisonSchema);
+}
+
+export { Comparison };
+export default Comparison;

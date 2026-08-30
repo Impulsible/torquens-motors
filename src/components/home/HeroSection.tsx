@@ -81,13 +81,13 @@ export function HeroSection() {
           className="absolute inset-0 transition-transform duration-500 ease-out will-change-transform"
         >
           <Image
-            src="https://images.unsplash.com/photo-1614162692292-7ac56d7f7f1e?q=80&w=2560&auto=format&fit=crop"
+            src="https://images.unsplash.com/photo-1747007703930-e8a1fba55bd2?q=80&w=2560&auto=format&fit=crop"
             alt="TORQUENS Luxury Automotive Showcase"
             fill
             priority
             quality={90}
             sizes="100vw"
-            className="object-cover object-center brightness-75 contrast-110"
+            className="object-cover object-center brightness-110 contrast-110"
           />
         </div>
       </div>
@@ -171,7 +171,7 @@ export function HeroSection() {
                 <Play className="h-3.5 w-3.5 fill-current ml-0.5" />
               </span>
               <span className="text-xs font-sans font-semibold tracking-wider text-secondary uppercase group-hover:text-primary transition-colors pr-2">
-                2024 Reel
+                2026 Reel
               </span>
             </button>
           </div>
@@ -256,7 +256,7 @@ export function HeroSection() {
             </button>
             <iframe
               className="h-full w-full"
-              src="https://www.youtube-nocookie.com/embed/dQw4w9WgXcQ?autoplay=1"
+              src="https://www.youtube-nocookie.com/embed/_ELWvr7fgUQ?autoplay=1"
               title="TORQUENS Motors Brand Showcase"
               allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
               allowFullScreen

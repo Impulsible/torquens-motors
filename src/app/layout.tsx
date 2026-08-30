@@ -1,6 +1,8 @@
 import type { Metadata } from 'next';
 import { Cormorant_Garamond, Plus_Jakarta_Sans } from 'next/font/google';
 import { Layout } from '../components/layout/Layout';
+import { ComparisonProvider } from '@/contexts/ComparisonContext';
+import { AuthProvider } from '@/components/providers/AuthProvider';
 import './globals.css';
 
 // -----------------------------------------------------------------------------
@@ -114,12 +116,16 @@ export default function RootLayout({ children }: RootLayoutProps) {
           Skip to main content
         </a>
 
-        {/* Layout Component */}
-        <Layout>
-          {children}
-        </Layout>
+        {/* ✅ Wrap with AuthProvider for NextAuth useSession() and ComparisonProvider for comparison context */}
+        <AuthProvider>
+          <ComparisonProvider>
+            <Layout>
+              {children}
+            </Layout>
+          </ComparisonProvider>
+        </AuthProvider>
 
-        {/* Floating Global UI Anchors (Notifications, Compare Tray) */}
+        {/* Floating Global UI Anchors (Notifications, Compare Tray, Modals) */}
         <div id="toast-portal" />
         <div id="modal-portal" />
       </body>

@@ -60,6 +60,7 @@ export type TransmissionType = 'Automatic' | 'Manual' | 'Semi-Automatic';
 export type DrivetrainType = 'FWD' | 'RWD' | 'AWD' | '4WD';
 
 export interface IVehicle {
+  // ✅ Remove the index signature [x: string]: number;
   id: string;
   make: string;
   model: string;
@@ -84,6 +85,8 @@ export interface IVehicle {
   views: number;
   savedCount: number;
   enquiryCount: number;
+  // Add power field for comparison
+  power?: number;
   createdAt: Date;
   updatedAt: Date;
 }
