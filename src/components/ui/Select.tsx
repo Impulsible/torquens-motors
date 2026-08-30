@@ -76,7 +76,8 @@ export const Select = forwardRef<HTMLSelectElement, SelectProps>(
             <label
               htmlFor={selectId}
               className={cn(
-                'text-xs uppercase tracking-wider font-semibold text-secondary select-none font-sans',
+                'text-xs uppercase tracking-wider font-semibold text-secondary select-none font-sans cursor-pointer',
+                disabled && 'cursor-not-allowed opacity-40',
                 labelClassName
               )}
             >
@@ -135,7 +136,7 @@ export const Select = forwardRef<HTMLSelectElement, SelectProps>(
                 key={option.value}
                 value={option.value}
                 disabled={option.disabled}
-                className="bg-graphite text-primary py-1"
+                className="bg-graphite text-primary py-1 cursor-pointer"
               >
                 {option.label}
               </option>

@@ -63,7 +63,7 @@ export const Button = forwardRef<HTMLButtonElement, ButtonProps>(
 
       // Radiant Gold Metallic Gradient & Ambient Glow
       gold: cn(
-        'relative bg-linear-to-r from-[#C5A059] via-[#E2B96C] to-[#C5A059] bg-[length:200%_auto]',
+        'relative bg-gradient-to-r from-[#C5A059] via-[#E2B96C] to-[#C5A059] bg-[length:200%_auto]',
         'text-obsidian font-semibold',
         'border border-gold/40 shadow-sm',
         'hover:bg-[position:right_center] hover:shadow-goldGlow hover:border-gold-hover',
@@ -144,15 +144,15 @@ export const Button = forwardRef<HTMLButtonElement, ButtonProps>(
         className={cn(
           // Layout & Ergonomics
           'group relative inline-flex items-center justify-center select-none font-sans whitespace-nowrap',
-          // 👇 Add cursor-pointer here
-          'cursor-pointer',
+          // Hand cursor when active, Not-Allowed cursor when disabled
+          'cursor-pointer disabled:cursor-not-allowed',
           // Luxury Spring Physics & Transitions
           'transition-all duration-300 ease-[cubic-bezier(0.16,1,0.3,1)]',
           'active:scale-[0.985] active:duration-100',
           // Accessible Focus Rings
           'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-gold/60 focus-visible:ring-offset-2 focus-visible:ring-offset-obsidian',
-          // Disabled States
-          'disabled:opacity-40 disabled:pointer-events-none disabled:grayscale-30',
+          // Disabled Visual Style
+          'disabled:opacity-40 disabled:grayscale-30',
           variantStyles[variant],
           sizeStyles[size],
           fullWidth && 'w-full',

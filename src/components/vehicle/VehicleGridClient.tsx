@@ -11,14 +11,17 @@ import type { IVehicle } from '@/types';
 import { cn } from '@/utils/cn';
 import { EmptyState } from '../ui/EmptyState';
 
-// Note: Data fetching is now done in the server component
-// This component only handles client-side state and interactions
-
 interface VehicleGridClientProps {
   initialVehicles: IVehicle[];
   initialTotal: number;
   className?: string;
 }
+
+const parsePowerNumber = (power: unknown): number => {
+  if (typeof power === 'number') return power;
+  if (typeof power === 'string') return parseInt(power, 10) || 0;
+  return 0;
+};
 
 export function VehicleGridClient({
   initialVehicles,
@@ -30,7 +33,6 @@ export function VehicleGridClient({
   const [favoritedIds, setFavoritedIds] = useState<Set<string>>(new Set());
   const [comparedIds, setComparedIds] = useState<Set<string>>(new Set());
 
-  // Toggle Favorite Handler
   const handleFavoriteToggle = (id: string) => {
     setFavoritedIds((prev) => {
       const next = new Set(prev);
@@ -40,7 +42,6 @@ export function VehicleGridClient({
     });
   };
 
-  // Toggle Compare Handler
   const handleCompareToggle = (id: string) => {
     setComparedIds((prev) => {
       const next = new Set(prev);
@@ -50,7 +51,6 @@ export function VehicleGridClient({
     });
   };
 
-  // Empty state
   if (vehicles.length === 0) {
     return (
       <EmptyState
@@ -66,7 +66,6 @@ export function VehicleGridClient({
 
   return (
     <div className={cn('space-y-8', className)}>
-      {/* Results Header */}
       <div className="flex items-center justify-between px-1 text-xs font-sans text-muted">
         <div className="flex items-center gap-2">
           <span className="w-2 h-2 rounded-full bg-gold animate-pulse" />
@@ -77,10 +76,9 @@ export function VehicleGridClient({
         </div>
       </div>
 
-      {/* Grid */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
         {vehicles.map((vehicle, index) => {
-          const isVerified = vehicle.verified === 'VERIFIED';
+          const isVerified = vehicle.verified === 'VERIFIED' || vehicle.verified === true;
           
           return (
             <div
@@ -91,7 +89,7 @@ export function VehicleGridClient({
               <VehicleCard
                 vehicle={{
                   id: vehicle.id,
-                  slug: vehicle.slug,
+                  slug: vehicle.slug || vehicle.id || '',
                   make: vehicle.make,
                   model: vehicle.model,
                   year: vehicle.year,
@@ -104,7 +102,7 @@ export function VehicleGridClient({
                   verified: isVerified,
                   status: vehicle.status,
                   location: vehicle.location,
-                  power: vehicle.power || 0,
+                  power: parsePowerNumber(vehicle.power),
                 }}
                 featured={false}
                 priority={index < 3}
@@ -118,7 +116,6 @@ export function VehicleGridClient({
         })}
       </div>
 
-      {/* End of Results */}
       {vehicles.length > 0 && (
         <div className="pt-8 pb-4 text-center border-t border-border/40">
           <p className="text-xs font-sans text-muted flex items-center justify-center gap-1.5">

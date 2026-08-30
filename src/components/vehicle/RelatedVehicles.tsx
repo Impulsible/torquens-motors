@@ -1,9 +1,8 @@
-/* eslint-disable @typescript-eslint/no-unused-vars */
 "use client";
 
 import { useEffect, useState } from "react";
 import Link from "next/link";
-import { ArrowRight, Sparkles, ShieldCheck } from "lucide-react";
+import { ArrowRight, Sparkles } from "lucide-react";
 
 import { VehicleCard } from "./VehicleCard";
 import { getRelatedVehicles } from "@/services/vehicle.service";
@@ -40,6 +39,12 @@ function RelatedCardSkeleton() {
   );
 }
 
+const parsePowerNumber = (power: unknown): number => {
+  if (typeof power === "number") return power;
+  if (typeof power === "string") return parseInt(power, 10) || 0;
+  return 0;
+};
+
 export function RelatedVehicles({
   vehicleId,
   make,
@@ -57,7 +62,6 @@ export function RelatedVehicles({
     const loadRelated = async () => {
       try {
         setLoading(true);
-        // ✅ Fix: Use the imported getRelatedVehicles function
         const results = await getRelatedVehicles(
           vehicleId,
           make,
@@ -86,7 +90,6 @@ export function RelatedVehicles({
     };
   }, [vehicleId, make, bodyType, limit]);
 
-  // Don't render anything if loading finished and no related vehicles exist
   if (!loading && vehicles.length === 0) {
     return null;
   }
@@ -137,8 +140,7 @@ export function RelatedVehicles({
           /* Cards Grid */
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
             {vehicles.map((vehicle, index) => {
-              // ✅ Fix: Convert verification status to boolean
-              const isVerified = vehicle.verified === "VERIFIED";
+              const isVerified = vehicle.verified === "VERIFIED" || vehicle.verified === true;
 
               return (
                 <div
@@ -149,7 +151,7 @@ export function RelatedVehicles({
                   <VehicleCard
                     vehicle={{
                       id: vehicle.id,
-                      slug: vehicle.slug,
+                      slug: vehicle.slug || vehicle.id || "",
                       make: vehicle.make,
                       model: vehicle.model,
                       year: vehicle.year,
@@ -162,7 +164,7 @@ export function RelatedVehicles({
                       verified: isVerified,
                       status: vehicle.status,
                       location: vehicle.location,
-                      power: vehicle.power || 0,
+                      power: parsePowerNumber(vehicle.power),
                     }}
                     featured={false}
                   />

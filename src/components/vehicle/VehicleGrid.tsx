@@ -26,7 +26,6 @@ interface VehicleGridProps {
 
 const VEHICLES_PER_PAGE = 12;
 
-// Sort parameter mapper matching VehicleService capabilities
 const SORT_MAP: Record<
   string,
   {
@@ -45,19 +44,14 @@ const SORT_MAP: Record<
   savedCount: { field: "savedCount", order: "desc" },
 };
 
-/**
- * Skeleton Loader matching VehicleCard geometry
- */
 function VehicleCardSkeleton() {
   return (
     <div className="bg-graphite border border-border rounded-xl overflow-hidden p-0 flex flex-col h-full animate-pulse">
-      {/* Image Stage Skeleton */}
       <div className="aspect-16/10 w-full bg-charcoal relative">
         <div className="absolute top-3 left-3 w-20 h-5 bg-border rounded-full" />
         <div className="absolute top-3 right-3 w-12 h-5 bg-border rounded-full" />
       </div>
 
-      {/* Content Area Skeleton */}
       <div className="p-5 flex flex-col justify-between flex-1 space-y-4">
         <div className="space-y-2">
           <div className="flex justify-between items-center">
@@ -71,10 +65,8 @@ function VehicleCardSkeleton() {
           </div>
         </div>
 
-        {/* Spec Inset Box Skeleton */}
         <div className="h-12 bg-inset border border-border/80 rounded-lg w-full" />
 
-        {/* Footer Dossier Skeleton */}
         <div className="pt-3 border-t border-border/60 flex justify-between items-center">
           <div className="h-3 w-16 bg-border rounded" />
           <div className="h-8 w-24 bg-border rounded-md" />
@@ -83,6 +75,12 @@ function VehicleCardSkeleton() {
     </div>
   );
 }
+
+const parsePowerNumber = (power: unknown): number => {
+  if (typeof power === "number") return power;
+  if (typeof power === "string") return parseInt(power, 10) || 0;
+  return 0;
+};
 
 export function VehicleGrid({
   initialVehicles = [],
@@ -100,15 +98,12 @@ export function VehicleGrid({
   const [hasMore, setHasMore] = useState(initialTotal > initialVehicles.length);
   const [error, setError] = useState<string | null>(null);
 
-  // Local saved/compared state trackers
   const [favoritedIds, setFavoritedIds] = useState<Set<string>>(new Set());
   const [comparedIds, setComparedIds] = useState<Set<string>>(new Set());
 
-  // Ref to prevent duplicate simultaneous fetches
   const isFetchingRef = useRef(false);
   const initialLoadDoneRef = useRef(false);
 
-  // Extract structured filters from searchParams
   const parseFiltersFromParams = useCallback((): VehicleFilters => {
     const filters: VehicleFilters = {};
 
@@ -153,7 +148,6 @@ export function VehicleGrid({
     return filters;
   }, [searchParams]);
 
-  // Main data loader function
   const loadVehicles = useCallback(
     async (pageNum: number, append: boolean = false) => {
       if (isFetchingRef.current) return;
@@ -171,7 +165,6 @@ export function VehicleGrid({
         const sortParam = searchParams.get("sort") || "newest";
         const sortOptions = SORT_MAP[sortParam] || SORT_MAP.newest;
 
-        // ✅ Fix: Use the imported getVehicles function directly
         const result = await getVehicles(
           filters,
           { page: pageNum, limit: VEHICLES_PER_PAGE },
@@ -207,9 +200,7 @@ export function VehicleGrid({
     [searchParams, parseFiltersFromParams],
   );
 
-  // Trigger data load when searchParams change - using a ref to track initial load
   useEffect(() => {
-    // Skip if this is the initial render and we have initial data
     if (!initialLoadDoneRef.current && initialVehicles.length > 0) {
       initialLoadDoneRef.current = true;
       return;
@@ -219,14 +210,12 @@ export function VehicleGrid({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [searchParams]);
 
-  // Set initial load done after first render
   useEffect(() => {
     if (!initialLoadDoneRef.current && initialVehicles.length > 0) {
       initialLoadDoneRef.current = true;
     }
   }, [initialVehicles]);
 
-  // Infinite Scroll Sentinel Observer
   const observerRef = useRef<IntersectionObserver | null>(null);
   const sentinelRef = useCallback(
     (node: HTMLDivElement | null) => {
@@ -247,7 +236,6 @@ export function VehicleGrid({
     [loading, loadingMore, hasMore, page, loadVehicles],
   );
 
-  // Toggle Favorite Handler
   const handleFavoriteToggle = (id: string) => {
     setFavoritedIds((prev) => {
       const next = new Set(prev);
@@ -257,7 +245,6 @@ export function VehicleGrid({
     });
   };
 
-  // Toggle Compare Handler
   const handleCompareToggle = (id: string) => {
     setComparedIds((prev) => {
       const next = new Set(prev);
@@ -267,9 +254,6 @@ export function VehicleGrid({
     });
   };
 
-  // ---------------------------------------------------------------------------
-  // 1. INITIAL LOADING SKELETON GRID
-  // ---------------------------------------------------------------------------
   if (loading) {
     return (
       <div
@@ -285,9 +269,6 @@ export function VehicleGrid({
     );
   }
 
-  // ---------------------------------------------------------------------------
-  // 2. ERROR STATE
-  // ---------------------------------------------------------------------------
   if (error) {
     return (
       <div className="p-8 sm:p-12 rounded-2xl bg-graphite border border-red-500/30 text-center space-y-4 max-w-lg mx-auto my-8 shadow-card">
@@ -315,9 +296,6 @@ export function VehicleGrid({
     );
   }
 
-  // ---------------------------------------------------------------------------
-  // 3. EMPTY STATE
-  // ---------------------------------------------------------------------------
   if (vehicles.length === 0) {
     const hasFilters = Array.from(searchParams.keys()).some(
       (k) => k !== "page",
@@ -345,12 +323,8 @@ export function VehicleGrid({
     );
   }
 
-  // ---------------------------------------------------------------------------
-  // 4. MAIN VEHICLE INVENTORY GRID
-  // ---------------------------------------------------------------------------
   return (
     <div className={cn("space-y-8", className)}>
-      {/* Total Results Counter Header */}
       <div className="flex items-center justify-between px-1 text-xs font-sans text-muted">
         <div className="flex items-center gap-2">
           <span className="w-2 h-2 rounded-full bg-gold animate-pulse" />
@@ -370,11 +344,9 @@ export function VehicleGrid({
         </div>
       </div>
 
-      {/* Grid Matrix */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
         {vehicles.map((vehicle: IVehicle, index: number) => {
-          // Map verification status to boolean for VehicleCard
-          const isVerified = vehicle.verified === "VERIFIED";
+          const isVerified = vehicle.verified === "VERIFIED" || vehicle.verified === true;
 
           return (
             <div
@@ -385,14 +357,14 @@ export function VehicleGrid({
               <VehicleCard
                 vehicle={{
                   id: vehicle.id,
-                  slug: vehicle.slug,
+                  slug: vehicle.slug || vehicle.id || "",
                   make: vehicle.make,
                   model: vehicle.model,
                   year: vehicle.year,
                   price: vehicle.price,
                   currency: vehicle.currency || "NGN",
                   mileage: vehicle.mileage,
-                  power: vehicle.power ?? 0,
+                  power: parsePowerNumber(vehicle.power),
                   images: vehicle.images || [],
                   transmission: vehicle.transmission,
                   fuelType: vehicle.fuelType,
@@ -412,7 +384,6 @@ export function VehicleGrid({
         })}
       </div>
 
-      {/* Infinite Scroll Sentinel & Load More Spinner */}
       {hasMore && (
         <div
           ref={sentinelRef}
@@ -427,7 +398,6 @@ export function VehicleGrid({
         </div>
       )}
 
-      {/* End of Results Indicator */}
       {!hasMore && vehicles.length > 0 && (
         <div className="pt-8 pb-4 text-center border-t border-border/40">
           <p className="text-xs font-sans text-muted flex items-center justify-center gap-1.5">
