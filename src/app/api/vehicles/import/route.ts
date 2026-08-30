@@ -3,8 +3,7 @@ import { APIClientService } from '@/services/api-client.service';
 import { getServerSession } from 'next-auth';
 import { authConfig } from '@/auth/config';
 
-// Register your external API here
-// This is where you configure your car API integration
+// External API Configuration
 const YOUR_CAR_API = {
   id: 'my-car-api',
   name: 'My Car API',
@@ -13,26 +12,27 @@ const YOUR_CAR_API = {
   enabled: true,
 };
 
-// Register the API on startup
+// Register the API on server initialization
 if (typeof window === 'undefined') {
   APIClientService.registerAPI(YOUR_CAR_API);
 }
 
 export async function POST(request: NextRequest) {
   try {
-    // Check authentication
+    // 1. Check Authentication
     const session = await getServerSession(authConfig);
-    if (!session) {
+    if (!session || !session.user) {
       return NextResponse.json(
-        { error: 'Unauthorized' },
+        { error: 'Unauthorized - Please sign in to import vehicles' },
         { status: 401 }
       );
     }
 
-    // Only dealers and admins can import
-    if (!session.user?.role || !['DEALER', 'ADMIN'].includes(session.user.role)) {
+    // 2. Role-Based Access Control
+    const userRole = (session.user as { role?: string }).role?.toUpperCase();
+    if (!userRole || !['DEALER', 'ADMIN'].includes(userRole)) {
       return NextResponse.json(
-        { error: 'Forbidden - Only dealers and admins can import vehicles' },
+        { error: 'Forbidden - Only verified dealers and admins can import vehicles' },
         { status: 403 }
       );
     }
@@ -40,7 +40,9 @@ export async function POST(request: NextRequest) {
     const body = await request.json();
     const { dealerId, syncAll = false } = body;
 
-    if (!dealerId) {
+    const targetDealerId = dealerId || (session.user as { id?: string }).id;
+
+    if (!targetDealerId) {
       return NextResponse.json(
         { error: 'Dealer ID is required' },
         { status: 400 }
@@ -49,18 +51,17 @@ export async function POST(request: NextRequest) {
 
     let result;
     if (syncAll) {
-      result = await APIClientService.syncVehicles(dealerId);
+      result = await APIClientService.syncVehicles(targetDealerId);
     } else {
-      // Import from specific API
       const apis = APIClientService.getAPIs();
       const api = apis.find((a) => a.enabled);
       if (!api) {
         return NextResponse.json(
-          { error: 'No enabled API found' },
+          { error: 'No enabled external API configured' },
           { status: 404 }
         );
       }
-      result = await APIClientService.importVehiclesFromAPI(api, dealerId);
+      result = await APIClientService.importVehiclesFromAPI(api, targetDealerId);
     }
 
     return NextResponse.json(result);
@@ -90,7 +91,6 @@ export async function GET(request: NextRequest) {
     const vin = searchParams.get('vin');
 
     if (vin) {
-      // Get vehicle by VIN
       const vehicle = await APIClientService.getVehicleByVIN(vin);
       if (!vehicle) {
         return NextResponse.json(
@@ -101,7 +101,6 @@ export async function GET(request: NextRequest) {
       return NextResponse.json(vehicle);
     }
 
-    // Get registered APIs
     const apis = APIClientService.getAPIs();
     return NextResponse.json({ apis });
   } catch (error) {
