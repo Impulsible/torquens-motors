@@ -4,6 +4,7 @@ import React, { useEffect, useRef } from 'react';
 import Link from 'next/link';
 import Image from 'next/image';
 import { usePathname } from 'next/navigation';
+import { signOut } from 'next-auth/react';
 import {
   X,
   LogOut,
@@ -63,7 +64,7 @@ export function MobileMenu({
 
     return () => {
       document.removeEventListener('keydown', handleKeyDown);
-      document.body.style.overflow = 'unset';
+      document.body.style.overflow = '';
     };
   }, [isOpen, onClose]);
 
@@ -75,7 +76,7 @@ export function MobileMenu({
   > = {
     ADMIN: {
       label: 'System Admin',
-      variant: 'emerald',
+      variant: 'success',
       icon: <ShieldCheck className="h-3 w-3" />,
       dashboardHref: '/admin',
     },
@@ -103,6 +104,15 @@ export function MobileMenu({
 
   const accountMenuItems = getAccountMenuItems();
 
+  const handleSignOut = async () => {
+    onClose();
+    if (onSignOut) {
+      await onSignOut();
+    } else {
+      await signOut({ callbackUrl: '/' });
+    }
+  };
+
   const initials = user?.name
     ? user.name
         .split(' ')
@@ -117,7 +127,7 @@ export function MobileMenu({
       role="dialog"
       aria-modal="true"
       aria-label="Mobile Navigation Menu"
-      className="fixed inset-0 z-50 flex justify-end bg-obsidian/85 backdrop-blur-xl md:hidden animate-fade-in"
+      className="fixed inset-0 z-100 flex justify-end bg-obsidian/85 backdrop-blur-xl lg:hidden animate-in fade-in duration-200"
       onClick={(e) => {
         if (e.target === e.currentTarget) onClose();
       }}
@@ -130,21 +140,22 @@ export function MobileMenu({
       <div
         ref={drawerRef}
         className={cn(
-          'relative flex flex-col w-full max-w-sm h-full bg-graphite border-l border-border/80 shadow-dropdown',
-          'animate-slide-up duration-300 overflow-hidden',
+          'relative flex flex-col w-full max-w-[320px] sm:max-w-sm h-full bg-graphite border-l border-border/80 shadow-dropdown',
+          'animate-in slide-in-from-right duration-300 overflow-hidden',
           className
         )}
       >
         <div
           aria-hidden="true"
-          className="pointer-events-none absolute inset-x-0 top-0 h-px bg-linear-to-r from-transparent via-white/15 to-transparent z-20"
+          className="pointer-events-none absolute inset-x-0 top-0 h-0.5 bg-linear-to-r from-transparent via-white/15 to-transparent z-20"
         />
 
-        {/* HEADER */}
-        <div className="flex items-center justify-between p-5 border-b border-border/60 bg-charcoal/30">
-          <Link href="/" onClick={onClose} className="flex items-center gap-1.5 cursor-pointer">
-            <span className="font-serif text-xl tracking-tight text-primary">TORQUENS</span>
-            <span className="font-sans text-xs uppercase tracking-widest font-semibold text-gold">
+        <div className="flex items-center justify-between p-5 border-b border-border/60 bg-charcoal/30 shrink-0">
+          <Link href="/" onClick={onClose} className="flex items-center gap-1.5 cursor-pointer focus:outline-none group">
+            <span className="font-serif text-xl tracking-tight text-primary group-hover:text-gold transition-colors">
+              TORQUENS
+            </span>
+            <span className="font-sans text-[10px] uppercase tracking-widest font-extrabold text-gold mt-0.5">
               MOTORS
             </span>
           </Link>
@@ -159,17 +170,17 @@ export function MobileMenu({
           </button>
         </div>
 
-        {/* SCROLLABLE BODY */}
-        <nav className="flex-1 overflow-y-auto p-5 space-y-6">
+        <nav className="flex-1 overflow-y-auto p-5 space-y-6 no-scrollbar">
           {isAuthenticated && user && (
-            <div className="p-3.5 rounded-lg bg-inset border border-border/70 shadow-inner">
+            <div className="p-3.5 rounded-xl bg-inset border border-border/70 shadow-inner">
               <div className="flex items-center gap-3">
-                <div className="relative h-10 w-10 rounded-full overflow-hidden border border-gold/40 p-0.5 bg-obsidian shrink-0 flex items-center justify-center">
+                <div className="relative h-11 w-11 rounded-full overflow-hidden border border-gold/40 p-0.5 bg-obsidian shrink-0 flex items-center justify-center">
                   {user.avatar ? (
                     <Image
                       src={user.avatar}
                       alt={user.name}
                       fill
+                      sizes="44px"
                       className="object-cover rounded-full"
                     />
                   ) : (
@@ -179,37 +190,36 @@ export function MobileMenu({
 
                 <div className="min-w-0 flex-1">
                   <div className="flex items-center justify-between gap-1">
-                    <h4 className="font-serif text-sm font-normal text-primary truncate">
+                    <h4 className="font-serif text-sm font-medium text-primary truncate">
                       {user.name}
                     </h4>
-                    <Badge variant={activeRole.variant} size="sm" leftIcon={activeRole.icon}>
+                    <Badge variant={activeRole.variant} size="xs" className="shrink-0 hidden sm:inline-flex">
                       {activeRole.label}
                     </Badge>
                   </div>
-                  <p className="text-xs text-muted font-mono truncate mt-0.5">{user.email}</p>
+                  <p className="text-[11px] text-muted font-mono truncate mt-0.5">{user.email}</p>
                 </div>
               </div>
             </div>
           )}
 
-          {/* MAIN SHOWROOM NAVIGATION */}
           <div>
             <span className="block text-[10px] uppercase tracking-widest font-semibold text-muted font-sans mb-2.5 px-2">
               Curated Showroom
             </span>
             <ul className="space-y-1">
               {mainNavItems.map((item) => {
-                const isActive = pathname === item.href;
+                const isActive = pathname === item.href || (item.href !== '/' && pathname.startsWith(item.href));
                 return (
                   <li key={item.href}>
                     <Link
                       href={item.href}
                       onClick={onClose}
                       className={cn(
-                        'group flex items-center justify-between px-3.5 py-2.5 rounded-md text-sm font-sans font-medium transition-all duration-200 cursor-pointer',
+                        'group flex items-center justify-between px-3.5 py-2.5 rounded-lg text-sm font-sans font-medium transition-all duration-200 cursor-pointer',
                         isActive
                           ? 'bg-gold/10 text-gold border-l-2 border-gold font-semibold shadow-sm'
-                          : 'text-secondary hover:text-primary hover:bg-charcoal/70'
+                          : 'text-secondary hover:text-primary hover:bg-charcoal/70 border-l-2 border-transparent'
                       )}
                     >
                       <div className="flex items-center gap-3">
@@ -229,7 +239,7 @@ export function MobileMenu({
                       <ChevronRight
                         className={cn(
                           'h-3.5 w-3.5 transition-transform duration-200',
-                          isActive ? 'text-gold' : 'text-muted/60 group-hover:text-gold group-hover:translate-x-0.5'
+                          isActive ? 'text-gold' : 'text-muted/50 group-hover:text-gold group-hover:translate-x-0.5'
                         )}
                       />
                     </Link>
@@ -239,9 +249,8 @@ export function MobileMenu({
             </ul>
           </div>
 
-          {/* VAULT ACCOUNT NAVIGATION */}
           {isAuthenticated && (
-            <div className="pt-4 border-t border-border/60">
+            <div className="pt-5 border-t border-border/60">
               <span className="block text-[10px] uppercase tracking-widest font-semibold text-muted font-sans mb-2.5 px-2">
                 Client Vault & Dossiers
               </span>
@@ -254,10 +263,10 @@ export function MobileMenu({
                         href={item.href}
                         onClick={onClose}
                         className={cn(
-                          'group flex items-center justify-between px-3.5 py-2.5 rounded-md text-sm font-sans font-medium transition-all duration-200 cursor-pointer',
+                          'group flex items-center justify-between px-3.5 py-2.5 rounded-lg text-sm font-sans font-medium transition-all duration-200 cursor-pointer',
                           isActive
                             ? 'bg-gold/10 text-gold border-l-2 border-gold font-semibold'
-                            : 'text-secondary hover:text-primary hover:bg-charcoal/70'
+                            : 'text-secondary hover:text-primary hover:bg-charcoal/70 border-l-2 border-transparent'
                         )}
                       >
                         <div className="flex items-center gap-3">
@@ -277,7 +286,7 @@ export function MobileMenu({
                         <ChevronRight
                           className={cn(
                             'h-3.5 w-3.5 transition-transform duration-200',
-                            isActive ? 'text-gold' : 'text-muted/60 group-hover:text-gold group-hover:translate-x-0.5'
+                            isActive ? 'text-gold' : 'text-muted/50 group-hover:text-gold group-hover:translate-x-0.5'
                           )}
                         />
                       </Link>
@@ -288,11 +297,8 @@ export function MobileMenu({
                 <li className="pt-2">
                   <button
                     type="button"
-                    onClick={async () => {
-                      onClose();
-                      if (onSignOut) await onSignOut();
-                    }}
-                    className="flex items-center justify-between w-full px-3.5 py-2.5 rounded-md text-sm font-sans text-red-400 hover:text-red-300 hover:bg-red-500/10 transition-colors cursor-pointer"
+                    onClick={handleSignOut}
+                    className="flex items-center justify-between w-full px-3.5 py-2.5 rounded-lg text-sm font-sans font-medium text-red-400 hover:text-red-300 hover:bg-red-500/10 transition-colors cursor-pointer border-l-2 border-transparent"
                   >
                     <div className="flex items-center gap-3">
                       <LogOut className="h-4 w-4" />
@@ -304,55 +310,55 @@ export function MobileMenu({
             </div>
           )}
 
-          {/* CONCIERGE CARD */}
-          <div className="p-3.5 rounded-lg bg-charcoal/40 border border-border/80 flex items-center justify-between">
+          <div className="p-4 rounded-xl bg-charcoal/40 border border-border/80 flex items-center justify-between hover:border-gold/30 transition-colors">
             <div className="flex items-center gap-3">
-              <div className="flex h-8 w-8 items-center justify-center rounded-md bg-gold/10 border border-gold/20 text-gold">
+              <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-gold/10 border border-gold/20 text-gold shrink-0">
                 <PhoneCall className="h-4 w-4" />
               </div>
-              <div>
+              <div className="min-w-0">
                 <span className="block text-xs font-semibold text-primary font-sans">
                   VIP Concierge Liaison
                 </span>
-                <span className="text-[11px] text-secondary font-sans">
+                <span className="text-[10px] text-secondary font-sans block mt-0.5">
                   Direct Line: +234 800 TORQUENS
                 </span>
               </div>
             </div>
             <a
               href="tel:+234800TORQUENS"
-              className="text-gold hover:text-gold-hover p-1 cursor-pointer"
+              className="text-gold hover:text-gold-hover p-1.5 cursor-pointer shrink-0"
               aria-label="Call concierge"
             >
               <ArrowUpRight className="h-4 w-4" />
             </a>
           </div>
-
-          {!isAuthenticated && (
-            <div className="pt-4 border-t border-border/60 space-y-3">
-              <Link href="/auth/login" onClick={onClose} className="block cursor-pointer">
-                <Button variant="secondary" size="md" fullWidth>
-                  Sign In to Vault
-                </Button>
-              </Link>
-              <Link href="/auth/register" onClick={onClose} className="block cursor-pointer">
-                <Button
-                  variant="gold"
-                  size="md"
-                  fullWidth
-                  rightIcon={<KeyRound className="h-4 w-4" />}
-                >
-                  Request Client Access
-                </Button>
-              </Link>
-            </div>
-          )}
         </nav>
 
-        <div className="p-4 border-t border-border/60 bg-charcoal/30 flex items-center justify-between text-[11px] font-sans text-muted">
-          <span>TORQUENS MOTORS © {new Date().getFullYear()}</span>
-          <div className="flex items-center gap-1 text-secondary">
-            <ShieldCheck className="h-3.5 w-3.5 text-emerald" />
+        {!isAuthenticated && (
+          <div className="p-5 border-t border-border/60 bg-charcoal/30 space-y-3 shrink-0">
+            <Link href="/auth/login" onClick={onClose} className="block cursor-pointer">
+              <Button variant="secondary" size="md" fullWidth className="text-xs">
+                Sign In to Vault
+              </Button>
+            </Link>
+            <Link href="/auth/register" onClick={onClose} className="block cursor-pointer">
+              <Button
+                variant="gold"
+                size="md"
+                fullWidth
+                className="text-xs uppercase tracking-widest font-semibold"
+                rightIcon={<KeyRound className="h-4 w-4" />}
+              >
+                Request Access
+              </Button>
+            </Link>
+          </div>
+        )}
+
+        <div className="p-4 border-t border-border/60 bg-obsidian flex items-center justify-between text-[10px] font-sans text-muted shrink-0">
+          <span>TORQUENS © {new Date().getFullYear()}</span>
+          <div className="flex items-center gap-1.5 text-secondary">
+            <ShieldCheck className="h-3 w-3 text-emerald" />
             <span>Encrypted Session</span>
           </div>
         </div>
@@ -360,3 +366,5 @@ export function MobileMenu({
     </div>
   );
 }
+
+export default MobileMenu;

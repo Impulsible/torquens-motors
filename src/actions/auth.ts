@@ -1,6 +1,6 @@
-/* eslint-disable @typescript-eslint/no-unused-vars */
 'use server';
 
+import crypto from 'crypto';
 import { z } from 'zod';
 import bcrypt from 'bcryptjs';
 import { connectToDatabase } from '@/lib/mongodb';
@@ -22,7 +22,7 @@ export interface ActionResult<T = unknown> {
   data?: T;
 }
 
-type AuthUserDocument = Document & {
+export interface AuthUserDocument extends Document {
   _id: string;
   name: string;
   email: string;
@@ -34,17 +34,18 @@ type AuthUserDocument = Document & {
   resetToken?: string;
   resetTokenExpires?: Date;
   phone?: string;
-  save: () => Promise<AuthUserDocument>;
-};
-
-interface AuthErrorLike {
-  type?: string;
-  name?: string;
-  message?: string;
+  lastLogin?: Date;
 }
 
-function isAuthErrorLike(err: unknown): err is AuthErrorLike {
-  return typeof err === 'object' && err !== null && ('type' in err || 'name' in err);
+// -----------------------------------------------------------------------------
+// HELPER UTILITIES
+// -----------------------------------------------------------------------------
+
+/**
+ * Generates a cryptographically secure hex token for email verifications and password resets.
+ */
+function generateSecureToken(): string {
+  return crypto.randomBytes(32).toString('hex');
 }
 
 // -----------------------------------------------------------------------------
@@ -59,10 +60,8 @@ export async function login(
   formData: FormData
 ): Promise<ActionResult> {
   try {
-    console.log('🔐 Login attempt started');
-
-    const email = formData.get('email') as string;
-    const password = formData.get('password') as string;
+    const email = formData.get('email');
+    const password = formData.get('password');
     const redirectTo = (formData.get('redirectTo') as string) || '/dashboard';
 
     if (!email || typeof email !== 'string') {
@@ -104,9 +103,8 @@ export async function login(
       return { success: false, message: 'Invalid email address or security key.' };
     }
 
-    // Check boolean verification flag
+    // Check verification status
     if (!user.emailVerified) {
-      console.log('⚠️ Login blocked: Account not verified');
       return {
         success: false,
         message: 'Please verify your email address before logging in. Check your inbox for the verification link.',
@@ -114,7 +112,6 @@ export async function login(
     }
 
     await User.findByIdAndUpdate(user._id, { lastLogin: new Date() });
-    console.log('✅ Login successful for:', trimmedEmail);
 
     return {
       success: true,
@@ -122,7 +119,7 @@ export async function login(
       redirectTo,
     };
   } catch (error: unknown) {
-    console.error('❌ Login Server Action Error:', error);
+    console.error('Login Server Action Error:', error);
     return {
       success: false,
       message: error instanceof Error ? error.message : 'An unexpected authentication error occurred.',
@@ -138,8 +135,6 @@ export async function register(
   formData: FormData
 ): Promise<ActionResult> {
   try {
-    console.log('📝 Register action called');
-
     const name = formData.get('name');
     const email = formData.get('email');
     const phone = formData.get('phone');
@@ -168,63 +163,54 @@ export async function register(
     const trimmedPassword = password.trim();
     const trimmedConfirmPassword = confirmPassword.trim();
 
-    if (trimmedName.length < 2) {
-      return { success: false, message: 'Name must be at least 2 characters long.' };
-    }
-
-    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-    if (!emailRegex.test(trimmedEmail)) {
-      return { success: false, message: 'Please enter a valid email address.' };
-    }
-
     if (trimmedPassword !== trimmedConfirmPassword) {
       return { success: false, message: 'Passwords do not match.' };
     }
 
-    if (trimmedPassword.length < 8) {
-      return { success: false, message: 'Password must be at least 8 characters long.' };
-    }
+    // Zod Schema Validation
+    const validated = registerSchema.parse({
+      name: trimmedName,
+      email: trimmedEmail,
+      password: trimmedPassword,
+    });
 
     await connectToDatabase();
 
-    const existingUser = await User.findOne({ email: trimmedEmail });
+    const existingUser = await User.findOne({ email: validated.email });
     if (existingUser) {
-      return { success: false, message: 'An account with this email already exists.' };
+      return { success: false, message: 'An account with this email address already exists.' };
     }
 
-    const hashedPassword = await bcrypt.hash(trimmedPassword, 12);
-
-    const token =
-      Math.random().toString(36).substring(2, 15) +
-      Math.random().toString(36).substring(2, 15);
+    const hashedPassword = await bcrypt.hash(validated.password, 12);
+    const token = generateSecureToken();
     const tokenExpires = new Date(Date.now() + 24 * 3600 * 1000); // 24 Hours
 
-    // In development or when AUTO_VERIFY_USERS=true, auto-verify user as Boolean true
+    // In development or when AUTO_VERIFY_USERS=true, auto-verify account
     const shouldAutoVerify =
       process.env.NODE_ENV === 'development' ||
       process.env.AUTO_VERIFY_USERS === 'true';
 
-    const user = await User.create({
-      name: trimmedName,
-      email: trimmedEmail,
+    const user = (await User.create({
+      name: validated.name,
+      email: validated.email,
       phone: trimmedPhone || undefined,
       password: hashedPassword,
       role: 'CUSTOMER',
-      emailVerified: shouldAutoVerify ? true : false, // ✅ Strictly Boolean
+      emailVerified: shouldAutoVerify,
       verificationToken: shouldAutoVerify ? undefined : token,
       verificationTokenExpires: shouldAutoVerify ? undefined : tokenExpires,
-    });
+    })) as AuthUserDocument;
 
-    console.log(`✅ MongoDB Account created (Auto-verified: ${shouldAutoVerify}):`, user.email);
-
-    // Dispatch verification email
-    try {
-      await EmailService.sendVerificationEmail(trimmedEmail, trimmedName, token);
-    } catch (emailError) {
-      console.error('⚠️ Verification email failed to transmit:', emailError);
+    // Dispatch verification email if not auto-verified
+    if (!shouldAutoVerify) {
+      try {
+        await EmailService.sendVerificationEmail(user.email, user.name, token);
+      } catch (emailError) {
+        console.error('Verification email failed to transmit:', emailError);
+      }
     }
 
-    const baseUrl = process.env.NEXTAUTH_URL || 'http://localhost:3000';
+    const baseUrl = process.env.NEXTAUTH_URL || 'https://torquensmotors.com';
     const verificationLink = `${baseUrl}/auth/verify?token=${token}`;
 
     return {
@@ -232,12 +218,19 @@ export async function register(
       message: shouldAutoVerify
         ? 'Your client registration was completed and verified automatically.'
         : 'Registration successful! Please check your email to verify your account.',
-      email: trimmedEmail,
+      email: user.email,
       verificationLink: shouldAutoVerify ? undefined : verificationLink,
       redirectTo: '/auth/login',
     };
   } catch (error: unknown) {
-    console.error('❌ Registration error:', error);
+    if (error instanceof z.ZodError) {
+      return {
+        success: false,
+        message: error.issues[0]?.message || 'Validation error.',
+      };
+    }
+
+    console.error('Registration Server Action Error:', error);
     return {
       success: false,
       message: error instanceof Error ? error.message : 'An unexpected error occurred during registration.',
@@ -265,15 +258,14 @@ export async function verifyEmail(token: string): Promise<ActionResult> {
       return { success: false, message: 'Invalid or expired verification token.' };
     }
 
-    // Set boolean flag
-    user.emailVerified = true; // ✅ Strictly Boolean
+    user.emailVerified = true;
     user.verificationToken = undefined;
     user.verificationTokenExpires = undefined;
     await user.save();
 
     return {
       success: true,
-      message: 'Email verified successfully! You can now log in.',
+      message: 'Email verified successfully! You can now log in to your account.',
     };
   } catch (error) {
     console.error('Verification Server Action Error:', error);
@@ -292,16 +284,18 @@ export async function forgotPassword(
   formData: FormData
 ): Promise<ActionResult> {
   try {
-    const email = formData.get('email') as string;
+    const email = formData.get('email');
 
-    if (!email) {
+    if (!email || typeof email !== 'string') {
       return { success: false, message: 'Email address is required.' };
     }
+
+    const trimmedEmail = email.trim().toLowerCase();
 
     await connectToDatabase();
 
     const user = (await User.findOne({
-      email: email.toLowerCase().trim(),
+      email: trimmedEmail,
     })) as AuthUserDocument | null;
 
     if (!user) {
@@ -311,9 +305,7 @@ export async function forgotPassword(
       };
     }
 
-    const resetToken =
-      Math.random().toString(36).substring(2, 15) +
-      Math.random().toString(36).substring(2, 15);
+    const resetToken = generateSecureToken();
     const resetTokenExpires = new Date(Date.now() + 3600000); // 1 hour
 
     user.resetToken = resetToken;
@@ -323,7 +315,7 @@ export async function forgotPassword(
     try {
       await EmailService.sendPasswordResetEmail(user.email, user.name, resetToken);
     } catch (emailError) {
-      console.error('⚠️ Failed to send reset email:', emailError);
+      console.error('Failed to send reset email:', emailError);
       return {
         success: false,
         message: 'Failed to dispatch reset email. Please try again later.',
@@ -332,7 +324,7 @@ export async function forgotPassword(
 
     return {
       success: true,
-      message: 'Password reset link sent to your email address.',
+      message: 'Password reset authorization link sent to your email address.',
     };
   } catch (error) {
     console.error('Forgot Password Server Action Error:', error);
@@ -351,19 +343,30 @@ export async function resetPassword(
   formData: FormData
 ): Promise<ActionResult> {
   try {
-    const token = formData.get('token') as string;
-    const password = formData.get('password') as string;
-    const confirmPassword = formData.get('confirmPassword') as string;
+    const token = formData.get('token');
+    const password = formData.get('password');
+    const confirmPassword = formData.get('confirmPassword');
 
-    if (!token) {
+    if (!token || typeof token !== 'string') {
       return { success: false, message: 'Reset authorization token is missing.' };
     }
 
-    if (password !== confirmPassword) {
+    if (!password || typeof password !== 'string') {
+      return { success: false, message: 'Password is required.' };
+    }
+
+    if (!confirmPassword || typeof confirmPassword !== 'string') {
+      return { success: false, message: 'Please confirm your password.' };
+    }
+
+    const trimmedPassword = password.trim();
+    const trimmedConfirmPassword = confirmPassword.trim();
+
+    if (trimmedPassword !== trimmedConfirmPassword) {
       return { success: false, message: 'Passwords do not match.' };
     }
 
-    if (password.length < 8) {
+    if (trimmedPassword.length < 8) {
       return { success: false, message: 'Password must be at least 8 characters long.' };
     }
 
@@ -378,7 +381,7 @@ export async function resetPassword(
       return { success: false, message: 'Invalid or expired password reset token.' };
     }
 
-    const hashedPassword = await bcrypt.hash(password, 12);
+    const hashedPassword = await bcrypt.hash(trimmedPassword, 12);
 
     user.password = hashedPassword;
     user.resetToken = undefined;
@@ -387,7 +390,7 @@ export async function resetPassword(
 
     return {
       success: true,
-      message: 'Password reset successfully! You may now sign in with your new key.',
+      message: 'Password reset successfully! You may now sign in with your new security key.',
       redirectTo: '/auth/login',
     };
   } catch (error) {
