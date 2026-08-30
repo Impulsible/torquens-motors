@@ -520,7 +520,8 @@ export async function getSearchSuggestions(query: string): Promise<SearchSuggest
       suggestions.push({
         type: 'vehicle',
         label: `${vehicle.make} ${vehicle.model} ${vehicle.year}`,
-        value: vehicle.slug,
+        // ✅ FIX: Safe fallback if slug is undefined
+        value: vehicle.slug || vehicle.id || '',
         image: vehicle.images?.[0],
       });
     }
