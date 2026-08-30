@@ -38,53 +38,56 @@ export interface AuthUserDocument extends Document {
 }
 
 // -----------------------------------------------------------------------------
-// HELPER UTILITIES
+// HELPERS
 // -----------------------------------------------------------------------------
 
-/**
- * Generates a cryptographically secure hex token for email verifications and password resets.
- */
 function generateSecureToken(): string {
   return crypto.randomBytes(32).toString('hex');
 }
 
+function asString(value: FormDataEntryValue | null): string {
+  return typeof value === 'string' ? value : '';
+}
+
+function asBool(value: FormDataEntryValue | null): boolean {
+  if (typeof value !== 'string') return false;
+  return value === 'true' || value === 'on' || value === '1';
+}
+
+function getBaseUrl(): string {
+  return (
+    process.env.NEXTAUTH_URL ||
+    process.env.NEXT_PUBLIC_SITE_URL ||
+    'http://localhost:3000'
+  );
+}
+
 // -----------------------------------------------------------------------------
-// SERVER ACTIONS
+// LOGIN
 // -----------------------------------------------------------------------------
 
-/**
- * Client Login Server Action
- */
 export async function login(
   _prevState: unknown,
   formData: FormData
 ): Promise<ActionResult> {
   try {
-    const email = formData.get('email');
-    const password = formData.get('password');
-    const redirectTo = (formData.get('redirectTo') as string) || '/dashboard';
+    const email = asString(formData.get('email')).trim().toLowerCase();
+    const password = asString(formData.get('password'));
+    const redirectTo = asString(formData.get('redirectTo')) || '/dashboard';
 
-    if (!email || typeof email !== 'string') {
-      return { success: false, message: 'Email address is required.' };
-    }
-
-    if (!password || typeof password !== 'string') {
-      return { success: false, message: 'Password is required.' };
-    }
-
-    const trimmedEmail = email.trim().toLowerCase();
-    const trimmedPassword = password.trim();
+    if (!email) return { success: false, message: 'Email address is required.' };
+    if (!password) return { success: false, message: 'Password is required.' };
 
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-    if (!emailRegex.test(trimmedEmail)) {
+    if (!emailRegex.test(email)) {
       return { success: false, message: 'Please enter a valid email address.' };
     }
 
     await connectToDatabase();
 
-    const user = (await User.findOne({
-      email: trimmedEmail,
-    }).select('+password')) as AuthUserDocument | null;
+    const user = (await User.findOne({ email }).select(
+      '+password'
+    )) as AuthUserDocument | null;
 
     if (!user) {
       return { success: false, message: 'Invalid email address or security key.' };
@@ -93,21 +96,21 @@ export async function login(
     if (!user.password) {
       return {
         success: false,
-        message: 'This account uses social authentication. Please sign in with Google or Apple.',
+        message:
+          'This account uses social authentication. Please sign in with Google or Apple.',
       };
     }
 
-    const isPasswordValid = await bcrypt.compare(trimmedPassword, user.password);
-
+    const isPasswordValid = await bcrypt.compare(password, user.password);
     if (!isPasswordValid) {
       return { success: false, message: 'Invalid email address or security key.' };
     }
 
-    // Check verification status
     if (!user.emailVerified) {
       return {
         success: false,
-        message: 'Please verify your email address before logging in. Check your inbox for the verification link.',
+        message:
+          'Please verify your email address before logging in. Check your inbox for the verification link.',
       };
     }
 
@@ -122,70 +125,77 @@ export async function login(
     console.error('Login Server Action Error:', error);
     return {
       success: false,
-      message: error instanceof Error ? error.message : 'An unexpected authentication error occurred.',
+      message:
+        error instanceof Error
+          ? error.message
+          : 'An unexpected authentication error occurred.',
     };
   }
 }
 
-/**
- * Client Registration Server Action
- */
+// -----------------------------------------------------------------------------
+// REGISTER (Fixed — all schema fields properly passed)
+// -----------------------------------------------------------------------------
+
 export async function register(
   _prevState: unknown,
   formData: FormData
 ): Promise<ActionResult> {
   try {
-    const name = formData.get('name');
-    const email = formData.get('email');
-    const phone = formData.get('phone');
-    const password = formData.get('password');
-    const confirmPassword = formData.get('confirmPassword');
+    const name = asString(formData.get('name')).trim();
+    const email = asString(formData.get('email')).trim().toLowerCase();
+    const phone = asString(formData.get('phone')).trim();
+    const password = asString(formData.get('password'));
+    const confirmPassword = asString(formData.get('confirmPassword'));
+    const termsAccepted = asBool(formData.get('termsAccepted'));
 
-    if (!name || typeof name !== 'string') {
+    // Fast pre-Zod field guards
+    if (!name) {
       return { success: false, message: 'Name is required.' };
     }
-
-    if (!email || typeof email !== 'string') {
+    if (!email) {
       return { success: false, message: 'Email address is required.' };
     }
-
-    if (!password || typeof password !== 'string') {
+    if (!password) {
       return { success: false, message: 'Password is required.' };
     }
-
-    if (!confirmPassword || typeof confirmPassword !== 'string') {
+    if (!confirmPassword) {
       return { success: false, message: 'Please confirm your password.' };
     }
-
-    const trimmedName = name.trim();
-    const trimmedEmail = email.trim().toLowerCase();
-    const trimmedPhone = phone && typeof phone === 'string' ? phone.trim() : '';
-    const trimmedPassword = password.trim();
-    const trimmedConfirmPassword = confirmPassword.trim();
-
-    if (trimmedPassword !== trimmedConfirmPassword) {
+    if (password !== confirmPassword) {
       return { success: false, message: 'Passwords do not match.' };
     }
+    if (!termsAccepted) {
+      return {
+        success: false,
+        message: 'You must accept the terms and privacy policy.',
+      };
+    }
 
-    // Zod Schema Validation
+    // ✅ Pass ALL fields expected by registerSchema
     const validated = registerSchema.parse({
-      name: trimmedName,
-      email: trimmedEmail,
-      password: trimmedPassword,
+      name,
+      email,
+      phone,
+      password,
+      confirmPassword,
+      termsAccepted: true,
     });
 
     await connectToDatabase();
 
     const existingUser = await User.findOne({ email: validated.email });
     if (existingUser) {
-      return { success: false, message: 'An account with this email address already exists.' };
+      return {
+        success: false,
+        message: 'An account with this email address already exists.',
+      };
     }
 
     const hashedPassword = await bcrypt.hash(validated.password, 12);
     const token = generateSecureToken();
-    const tokenExpires = new Date(Date.now() + 24 * 3600 * 1000); // 24 Hours
+    const tokenExpires = new Date(Date.now() + 24 * 3600 * 1000);
 
-    // In development or when AUTO_VERIFY_USERS=true, auto-verify account
     const shouldAutoVerify =
       process.env.NODE_ENV === 'development' ||
       process.env.AUTO_VERIFY_USERS === 'true';
@@ -193,57 +203,68 @@ export async function register(
     const user = (await User.create({
       name: validated.name,
       email: validated.email,
-      phone: trimmedPhone || undefined,
+      phone: validated.phone && validated.phone.length > 0 ? validated.phone : undefined,
       password: hashedPassword,
       role: 'CUSTOMER',
-      emailVerified: shouldAutoVerify,
+      emailVerified: Boolean(shouldAutoVerify),
       verificationToken: shouldAutoVerify ? undefined : token,
       verificationTokenExpires: shouldAutoVerify ? undefined : tokenExpires,
     })) as AuthUserDocument;
 
-    // Dispatch verification email if not auto-verified
     if (!shouldAutoVerify) {
       try {
-        await EmailService.sendVerificationEmail(user.email, user.name, token);
+        await EmailService.sendVerificationEmail(
+          String(user.email),
+          String(user.name || validated.name || 'Client'),
+          String(token)
+        );
       } catch (emailError) {
         console.error('Verification email failed to transmit:', emailError);
+        // Do not fail account creation if email fails
       }
     }
 
-    const baseUrl = process.env.NEXTAUTH_URL || 'https://torquensmotors.com';
-    const verificationLink = `${baseUrl}/auth/verify?token=${token}`;
+    const verificationLink = `${getBaseUrl()}/auth/verify?token=${token}`;
 
     return {
       success: true,
       message: shouldAutoVerify
-        ? 'Your client registration was completed and verified automatically.'
+        ? 'Your client registration was completed and verified automatically. You can sign in now.'
         : 'Registration successful! Please check your email to verify your account.',
-      email: user.email,
+      email: String(user.email),
       verificationLink: shouldAutoVerify ? undefined : verificationLink,
       redirectTo: '/auth/login',
     };
   } catch (error: unknown) {
     if (error instanceof z.ZodError) {
+      const issue = error.issues[0];
+      console.error('Register Zod issues:', error.issues);
       return {
         success: false,
-        message: error.issues[0]?.message || 'Validation error.',
+        message: issue
+          ? `${issue.path?.join('.') || 'field'}: ${issue.message}`
+          : 'Validation error. Please check your details.',
       };
     }
 
     console.error('Registration Server Action Error:', error);
     return {
       success: false,
-      message: error instanceof Error ? error.message : 'An unexpected error occurred during registration.',
+      message:
+        error instanceof Error
+          ? error.message
+          : 'An unexpected error occurred during registration.',
     };
   }
 }
 
-/**
- * Verify Email Token Server Action
- */
+// -----------------------------------------------------------------------------
+// VERIFY EMAIL
+// -----------------------------------------------------------------------------
+
 export async function verifyEmail(token: string): Promise<ActionResult> {
   try {
-    if (!token) {
+    if (!token || typeof token !== 'string') {
       return { success: false, message: 'Verification token is required.' };
     }
 
@@ -276,27 +297,24 @@ export async function verifyEmail(token: string): Promise<ActionResult> {
   }
 }
 
-/**
- * Forgot Password Server Action
- */
+// -----------------------------------------------------------------------------
+// FORGOT PASSWORD
+// -----------------------------------------------------------------------------
+
 export async function forgotPassword(
   _prevState: unknown,
   formData: FormData
 ): Promise<ActionResult> {
   try {
-    const email = formData.get('email');
+    const email = asString(formData.get('email')).trim().toLowerCase();
 
-    if (!email || typeof email !== 'string') {
+    if (!email) {
       return { success: false, message: 'Email address is required.' };
     }
 
-    const trimmedEmail = email.trim().toLowerCase();
-
     await connectToDatabase();
 
-    const user = (await User.findOne({
-      email: trimmedEmail,
-    })) as AuthUserDocument | null;
+    const user = (await User.findOne({ email })) as AuthUserDocument | null;
 
     if (!user) {
       return {
@@ -306,14 +324,18 @@ export async function forgotPassword(
     }
 
     const resetToken = generateSecureToken();
-    const resetTokenExpires = new Date(Date.now() + 3600000); // 1 hour
+    const resetTokenExpires = new Date(Date.now() + 3600000);
 
     user.resetToken = resetToken;
     user.resetTokenExpires = resetTokenExpires;
     await user.save();
 
     try {
-      await EmailService.sendPasswordResetEmail(user.email, user.name, resetToken);
+      await EmailService.sendPasswordResetEmail(
+        String(user.email),
+        String(user.name || 'Client'),
+        String(resetToken)
+      );
     } catch (emailError) {
       console.error('Failed to send reset email:', emailError);
       return {
@@ -335,39 +357,36 @@ export async function forgotPassword(
   }
 }
 
-/**
- * Reset Password Server Action
- */
+// -----------------------------------------------------------------------------
+// RESET PASSWORD
+// -----------------------------------------------------------------------------
+
 export async function resetPassword(
   _prevState: unknown,
   formData: FormData
 ): Promise<ActionResult> {
   try {
-    const token = formData.get('token');
-    const password = formData.get('password');
-    const confirmPassword = formData.get('confirmPassword');
+    const token = asString(formData.get('token'));
+    const password = asString(formData.get('password'));
+    const confirmPassword = asString(formData.get('confirmPassword'));
 
-    if (!token || typeof token !== 'string') {
+    if (!token) {
       return { success: false, message: 'Reset authorization token is missing.' };
     }
-
-    if (!password || typeof password !== 'string') {
+    if (!password) {
       return { success: false, message: 'Password is required.' };
     }
-
-    if (!confirmPassword || typeof confirmPassword !== 'string') {
+    if (!confirmPassword) {
       return { success: false, message: 'Please confirm your password.' };
     }
-
-    const trimmedPassword = password.trim();
-    const trimmedConfirmPassword = confirmPassword.trim();
-
-    if (trimmedPassword !== trimmedConfirmPassword) {
+    if (password !== confirmPassword) {
       return { success: false, message: 'Passwords do not match.' };
     }
-
-    if (trimmedPassword.length < 8) {
-      return { success: false, message: 'Password must be at least 8 characters long.' };
+    if (password.length < 8) {
+      return {
+        success: false,
+        message: 'Password must be at least 8 characters long.',
+      };
     }
 
     await connectToDatabase();
@@ -381,16 +400,15 @@ export async function resetPassword(
       return { success: false, message: 'Invalid or expired password reset token.' };
     }
 
-    const hashedPassword = await bcrypt.hash(trimmedPassword, 12);
-
-    user.password = hashedPassword;
+    user.password = await bcrypt.hash(password, 12);
     user.resetToken = undefined;
     user.resetTokenExpires = undefined;
     await user.save();
 
     return {
       success: true,
-      message: 'Password reset successfully! You may now sign in with your new security key.',
+      message:
+        'Password reset successfully! You may now sign in with your new security key.',
       redirectTo: '/auth/login',
     };
   } catch (error) {
@@ -402,9 +420,10 @@ export async function resetPassword(
   }
 }
 
-/**
- * Logout Server Action
- */
+// -----------------------------------------------------------------------------
+// LOGOUT
+// -----------------------------------------------------------------------------
+
 export async function logout(): Promise<ActionResult> {
   return {
     success: true,

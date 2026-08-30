@@ -4,10 +4,7 @@ import { z } from 'zod';
 /*                               SHARED HELPERS                               */
 /* -------------------------------------------------------------------------- */
 
-// Global regex for international E.164 phone format or standard digits (10-15 chars)
 const phoneRegex = /^\+?[1-9]\d{1,14}$/;
-
-// Standard 17-character Vehicle Identification Number (VIN) regex (excludes I, O, Q)
 const vinRegex = /^[A-HJ-NPR-Z0-9]{17}$/i;
 
 /* -------------------------------------------------------------------------- */
@@ -21,10 +18,8 @@ export const loginSchema = z.object({
     .min(1, 'Email address is required')
     .email('Please provide a valid email address')
     .toLowerCase(),
-  password: z
-    .string()
-    .min(1, 'Password is required'),
-  rememberMe: z.boolean().default(false),
+  password: z.string().min(1, 'Password is required'),
+  rememberMe: z.boolean().optional().default(false),
 });
 
 export const registerSchema = z
@@ -32,28 +27,44 @@ export const registerSchema = z
     name: z
       .string()
       .trim()
+      .min(1, 'Name is required')
       .min(2, 'Name must be at least 2 characters')
       .max(60, 'Name cannot exceed 60 characters'),
+
     email: z
       .string()
       .trim()
+      .min(1, 'Email address is required')
       .email('Please provide a valid email address')
       .toLowerCase(),
+
+    // Phone is completely optional. Empty string is allowed.
     phone: z
       .string()
       .trim()
-      .regex(phoneRegex, 'Please enter a valid international phone number (e.g., +1234567890)')
       .optional()
-      .or(z.literal('')),
+      .transform((v) => v ?? '')
+      .refine(
+        (v) => v === '' || phoneRegex.test(v),
+        'Please enter a valid international phone number (e.g., +1234567890)'
+      ),
+
     password: z
       .string()
+      .min(1, 'Password is required')
       .min(8, 'Password must be at least 8 characters')
       .regex(/[A-Z]/, 'Password must contain at least one uppercase letter')
       .regex(/[0-9]/, 'Password must contain at least one number'),
-    confirmPassword: z.string().min(1, 'Please confirm your password'),
+
+    confirmPassword: z
+      .string()
+      .min(1, 'Please confirm your password'),
+
+    // Accept boolean OR string "true"/"on"/"1"
     termsAccepted: z
-      .boolean()
-      .refine((val) => val === true, 'You must accept the terms and privacy policy'),
+      .union([z.boolean(), z.string()])
+      .transform((v) => v === true || v === 'true' || v === 'on' || v === '1')
+      .refine((v) => v === true, 'You must accept the terms and privacy policy'),
   })
   .refine((data) => data.password === data.confirmPassword, {
     message: 'Passwords do not match',
@@ -63,7 +74,12 @@ export const registerSchema = z
 export const updateProfileSchema = z.object({
   name: z.string().trim().min(2, 'Name must be at least 2 characters').max(60),
   email: z.string().trim().email('Invalid email address').toLowerCase(),
-  phone: z.string().trim().regex(phoneRegex, 'Invalid phone number format').optional().or(z.literal('')),
+  phone: z
+    .string()
+    .trim()
+    .optional()
+    .transform((v) => v ?? '')
+    .refine((v) => v === '' || phoneRegex.test(v), 'Invalid phone number format'),
   avatarUrl: z.string().url('Invalid image URL').optional().or(z.literal('')),
 });
 
@@ -114,7 +130,6 @@ export const VehicleConditionEnum = z.enum([
   'CLASSIC_HERITAGE',
 ]);
 
-// ✅ Simplified: Use coerce with .pipe() for better error handling
 export const vehicleSchema = z.object({
   vin: z
     .string()
@@ -130,44 +145,26 @@ export const vehicleSchema = z.object({
     .number()
     .int()
     .min(1900, 'Year must be after 1900')
-    .max(new Date().getFullYear() + 2, 'Year cannot be in the distant future')
-    .or(z.number().int().min(1900).max(new Date().getFullYear() + 2)),
-  price: z.coerce
-    .number()
-    .positive('Price must be greater than zero'),
+    .max(new Date().getFullYear() + 2, 'Year cannot be in the distant future'),
+  price: z.coerce.number().positive('Price must be greater than zero'),
   currency: z.string().default('USD'),
-  mileage: z.coerce
-    .number()
-    .nonnegative('Mileage cannot be negative'),
-  
-  // Mechanical Specs
+  mileage: z.coerce.number().nonnegative('Mileage cannot be negative'),
+
   transmission: TransmissionEnum,
   fuelType: FuelTypeEnum,
   drivetrain: DrivetrainEnum,
-  engine: z.string().trim().min(1, 'Engine specification is required (e.g., 4.0L Twin-Turbo V8)'),
-  horsepower: z.coerce
-    .number()
-    .int()
-    .positive('Horsepower must be greater than 0'),
-  acceleration: z.coerce
-    .number()
-    .positive('0-60 time must be a positive number')
-    .optional(),
-  topSpeed: z.coerce
-    .number()
-    .int()
-    .positive('Top speed must be positive')
-    .optional(),
+  engine: z.string().trim().min(1, 'Engine specification is required'),
+  horsepower: z.coerce.number().int().positive('Horsepower must be greater than 0'),
+  acceleration: z.coerce.number().positive('0-60 time must be positive').optional(),
+  topSpeed: z.coerce.number().int().positive('Top speed must be positive').optional(),
 
-  // Classification & Esthetics
   bodyType: BodyTypeEnum,
   condition: VehicleConditionEnum.default('CERTIFIED_PRE_OWNED'),
   status: VehicleStatusEnum.default('AVAILABLE'),
-  exteriorColor: z.string().trim().min(1, 'Exterior paint code/color is required'),
-  interiorColor: z.string().trim().min(1, 'Interior trim/leather color is required'),
-  location: z.string().trim().min(1, 'Showroom or storage location is required'),
-  
-  // Media & Narrative
+  exteriorColor: z.string().trim().min(1, 'Exterior color is required'),
+  interiorColor: z.string().trim().min(1, 'Interior color is required'),
+  location: z.string().trim().min(1, 'Showroom location is required'),
+
   images: z
     .array(z.string().url('Must be a valid image URL'))
     .min(1, 'At least one vehicle photograph is required'),
@@ -175,13 +172,13 @@ export const vehicleSchema = z.object({
   description: z
     .string()
     .trim()
-    .min(20, 'Vehicle dossier description must be at least 20 characters'),
+    .min(20, 'Vehicle description must be at least 20 characters'),
   isFeatured: z.boolean().default(false),
   isVerified: z.boolean().default(true),
 });
 
 /* -------------------------------------------------------------------------- */
-/*                     3. INVENTORY SEARCH & FILTER SCHEMA                     */
+/*                     3. INVENTORY SEARCH & FILTER SCHEMA                    */
 /* -------------------------------------------------------------------------- */
 
 export const vehicleFilterSchema = z.object({
@@ -197,7 +194,9 @@ export const vehicleFilterSchema = z.object({
   transmission: z.array(TransmissionEnum).optional(),
   fuelType: z.array(FuelTypeEnum).optional(),
   status: VehicleStatusEnum.optional(),
-  sortBy: z.enum(['price_asc', 'price_desc', 'year_desc', 'mileage_asc', 'newest']).default('newest'),
+  sortBy: z
+    .enum(['price_asc', 'price_desc', 'year_desc', 'mileage_asc', 'newest'])
+    .default('newest'),
   page: z.coerce.number().int().min(1).default(1),
   limit: z.coerce.number().int().min(1).max(50).default(12),
 });
@@ -217,26 +216,11 @@ export const enquiryTypeEnum = z.enum([
 export const enquirySchema = z.object({
   vehicleId: z.string().optional(),
   enquiryType: enquiryTypeEnum.default('GENERAL_INQUIRY'),
-  name: z
-    .string()
-    .trim()
-    .min(2, 'Name must be at least 2 characters')
-    .max(60, 'Name cannot exceed 60 characters'),
-  email: z
-    .string()
-    .trim()
-    .email('Please provide a valid email address')
-    .toLowerCase(),
-  phone: z
-    .string()
-    .trim()
-    .regex(phoneRegex, 'Please provide a valid phone number with country code (e.g. +14155552671)'),
+  name: z.string().trim().min(2, 'Name must be at least 2 characters').max(60),
+  email: z.string().trim().email('Please provide a valid email address').toLowerCase(),
+  phone: z.string().trim().regex(phoneRegex, 'Please provide a valid phone number'),
   preferredContact: z.enum(['EMAIL', 'PHONE', 'WHATSAPP']),
-  message: z
-    .string()
-    .trim()
-    .min(10, 'Please provide at least 10 characters detailing your request')
-    .max(1500, 'Message cannot exceed 1,500 characters'),
+  message: z.string().trim().min(10, 'Please provide at least 10 characters').max(1500),
   hasTradeIn: z.boolean().default(false),
   tradeInDetails: z.string().trim().optional(),
 });
@@ -254,8 +238,8 @@ export const testDriveBookingSchema = z.object({
   }, 'Scheduled date must be today or in the future'),
   timeSlot: z.enum(['MORNING_10AM', 'AFTERNOON_2PM', 'EVENING_5PM']),
   locationType: z.enum(['SHOWROOM', 'PRIVATE_RESIDENCE', 'CONCIERGE_DELIVERY']),
-  driverLicenseNumber: z.string().trim().min(5, 'Driver license number is required for insurance verification'),
-  notes: z.string().trim().max(500, 'Notes cannot exceed 500 characters').optional(),
+  driverLicenseNumber: z.string().trim().min(5, 'Driver license number is required'),
+  notes: z.string().trim().max(500).optional(),
 });
 
 /* -------------------------------------------------------------------------- */
