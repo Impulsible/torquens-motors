@@ -1,6 +1,6 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 /* eslint-disable react-hooks/incompatible-library */
-/* eslint-disable @typescript-eslint/no-unused-vars */
+
 'use client';
 
 import React, { useState, Suspense, useEffect } from 'react';
@@ -21,7 +21,6 @@ import {
   Sparkles,
   AlertCircle,
   CheckCircle2,
-  KeyRound,
   ArrowRight,
   ArrowLeft,
   Loader2,
@@ -66,7 +65,6 @@ function RegisterContent() {
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const [authError, setAuthError] = useState<string | null>(null);
   const [success, setSuccess] = useState<{ message: string; email?: string } | null>(null);
-  const [token, setToken] = useState<string | null>(null);
   const [activePrivilege, setActivePrivilege] = useState(0);
 
   useEffect(() => {
@@ -114,16 +112,9 @@ function RegisterContent() {
 
       if (result?.success) {
         setSuccess({
-          message: result.message || 'Vault credentials registered successfully. Please verify your email.',
+          message: result.message || 'Vault account created successfully. You can now sign in immediately.',
           email: result.email || data.email,
         });
-
-        if (result.data && typeof result.data === 'object' && 'token' in result.data) {
-          const typedData = result.data as { token?: string };
-          if (typedData.token) {
-            setToken(typedData.token);
-          }
-        }
       } else {
         setAuthError(result?.message || 'Registration failed. Please review your credentials.');
       }
@@ -139,23 +130,8 @@ function RegisterContent() {
     router.push(`/api/auth/signin/${provider}`);
   };
 
-  const handleVerifyClick = async () => {
-    if (!token) return;
-    try {
-      const response = await fetch(`/api/auth/verify?token=${token}`);
-      const data = (await response.json()) as { success?: boolean; message?: string };
-      alert(data.message || 'Verification attempted');
-      if (data.success) {
-        router.push('/auth/login');
-      }
-    } catch (err: unknown) {
-      const errMsg = err instanceof Error ? err.message : 'Unknown dynamic verification error';
-      alert('Error: ' + errMsg);
-    }
-  };
-
   /* ───────────────────────────────────────────────────────────── */
-  /* SUCCESS VIEW                                                  */
+  /* SUCCESS VIEW (Direct Access Confirmation)                     */
   /* ───────────────────────────────────────────────────────────── */
   if (success) {
     return (
@@ -175,12 +151,12 @@ function RegisterContent() {
 
             <div className="mb-4 inline-flex items-center gap-2 px-3 py-1 rounded-full bg-gold/10 border border-gold/20">
               <span className="text-[10px] font-mono tracking-[0.2em] uppercase text-gold">
-                Application Approved
+                Vault Established
               </span>
             </div>
 
             <h1 className="text-2xl sm:text-3xl font-serif font-light text-primary mb-3">
-              Vault Access Initialized
+              Registration Complete
             </h1>
 
             <p className="text-secondary font-sans text-sm mb-6 leading-relaxed">
@@ -188,23 +164,8 @@ function RegisterContent() {
             </p>
 
             {success.email && (
-              <div className="text-xs text-muted font-mono bg-charcoal/80 border border-border/60 p-3.5 rounded-md mb-6 break-all">
-                Verification link dispatched to: <br />
-                <span className="text-gold font-semibold mt-1 inline-block">{success.email}</span>
-              </div>
-            )}
-
-            {process.env.NODE_ENV === 'development' && token && (
-              <div className="mb-6 p-4 bg-charcoal/80 border border-gold/30 rounded-md">
-                <p className="text-xs text-muted mb-2">🔗 Development: Click to verify</p>
-                <button
-                  type="button"
-                  onClick={handleVerifyClick}
-                  className="text-gold text-xs hover:underline w-full text-center font-mono"
-                >
-                  Click here to verify your email (Development Only)
-                </button>
-                <p className="text-[10px] text-muted mt-1 break-all">Token: {token}</p>
+              <div className="text-xs text-muted font-mono bg-charcoal/80 border border-border/60 p-3 rounded-md mb-6 break-all">
+                Client ID: <span className="text-gold font-semibold">{success.email}</span>
               </div>
             )}
 
@@ -274,7 +235,7 @@ function RegisterContent() {
             <div className="mb-6 inline-flex items-center gap-2 px-3 py-1 rounded-full bg-gold/10 border border-gold/20">
               <Sparkles className="h-3 w-3 text-gold" />
               <span className="text-[10px] font-mono tracking-[0.2em] uppercase text-gold">
-                Membership Application
+                Membership Access
               </span>
             </div>
 
@@ -328,7 +289,7 @@ function RegisterContent() {
               </div>
 
               <h1 className="font-serif text-3xl sm:text-4xl font-light tracking-tight text-primary mb-2">
-                Request Private Vault
+                Create Private Vault
               </h1>
               <p className="text-xs sm:text-sm text-secondary font-sans leading-relaxed">
                 Establish your client credentials to access reserved vehicles and private allocations.
