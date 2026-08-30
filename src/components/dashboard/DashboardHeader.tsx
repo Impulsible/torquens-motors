@@ -1,4 +1,5 @@
 /* eslint-disable react-hooks/set-state-in-effect */
+/* eslint-disable @next/next/no-img-element */
 'use client';
 
 import React, { useState, useEffect } from 'react';
@@ -14,27 +15,18 @@ import {
 import { Badge } from '@/components/ui/Badge';
 import { Button } from '@/components/ui/Button';
 import { DashboardSidebar } from '@/components/dashboard/DashboardSidebar';
+import { useProfile } from '@/contexts/ProfileContext';
 
-interface DashboardHeaderProps {
-  user?: {
-    name?: string | null;
-    email?: string | null;
-    role?: string | null;
-    image?: string | null;
-  };
-}
-
-export function DashboardHeader({ user }: DashboardHeaderProps) {
+export function DashboardHeader() {
   const pathname = usePathname();
+  const { profile } = useProfile();
   const [isMobileOpen, setIsMobileOpen] = useState(false);
   const [hasNotifications, setHasNotifications] = useState(true);
 
-  // Close drawer on route change
   useEffect(() => {
     setIsMobileOpen(false);
   }, [pathname]);
 
-  // Lock scroll when mobile menu is active
   useEffect(() => {
     if (isMobileOpen) {
       document.body.style.overflow = 'hidden';
@@ -115,12 +107,20 @@ export function DashboardHeader({ user }: DashboardHeaderProps) {
               href="/dashboard/profile"
               className="flex items-center gap-2.5 pl-1.5 pr-2.5 py-1 rounded-full bg-graphite hover:bg-charcoal border border-border/80 transition-colors"
             >
-              <div className="w-7 h-7 rounded-full bg-gold/15 border border-gold/30 flex items-center justify-center text-gold font-serif text-xs">
-                {user?.name?.[0]?.toUpperCase() || 'C'}
+              <div className="w-7 h-7 rounded-full bg-gold/15 border border-gold/30 flex items-center justify-center text-gold font-serif text-xs overflow-hidden">
+                {profile?.avatar ? (
+                  <img
+                    src={profile.avatar}
+                    alt={profile?.name || 'Client'}
+                    className="w-full h-full object-cover"
+                  />
+                ) : (
+                  profile?.name?.[0]?.toUpperCase() || 'C'
+                )}
               </div>
               <div className="hidden md:flex flex-col text-left">
                 <span className="text-xs font-sans font-medium text-primary leading-tight truncate max-w-25">
-                  {user?.name?.split(' ')[0] || 'Client'}
+                  {profile?.name?.split(' ')[0] || 'Client'}
                 </span>
                 <span className="text-[10px] text-gold font-mono uppercase tracking-wider leading-none">
                   Tier 1
@@ -131,7 +131,6 @@ export function DashboardHeader({ user }: DashboardHeaderProps) {
         </div>
       </header>
 
-      {/* Mobile Drawer Sheet */}
       {isMobileOpen && (
         <div className="fixed inset-0 z-50 md:hidden animate-fade-in" role="dialog" aria-modal="true">
           <div
@@ -139,7 +138,6 @@ export function DashboardHeader({ user }: DashboardHeaderProps) {
             onClick={() => setIsMobileOpen(false)}
             aria-hidden="true"
           />
-
           <div className="fixed inset-y-0 left-0 w-4/5 max-w-xs bg-graphite border-r border-border shadow-2xl flex flex-col z-10 animate-slide-right">
             <div className="flex items-center justify-between px-5 py-4 border-b border-border/80">
               <div className="flex items-center gap-2">
@@ -159,7 +157,7 @@ export function DashboardHeader({ user }: DashboardHeaderProps) {
             </div>
 
             <div className="flex-1 overflow-y-auto">
-              <DashboardSidebar user={user} isMobile onClose={() => setIsMobileOpen(false)} />
+              <DashboardSidebar isMobile onClose={() => setIsMobileOpen(false)} />
             </div>
           </div>
         </div>

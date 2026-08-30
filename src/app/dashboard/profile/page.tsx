@@ -1,6 +1,4 @@
 /* eslint-disable @next/next/no-img-element */
-/* eslint-disable react-hooks/exhaustive-deps */
-/* eslint-disable react-hooks/set-state-in-effect */
 /* eslint-disable @typescript-eslint/no-explicit-any */
 'use client';
 
@@ -30,6 +28,7 @@ import { Card } from '@/components/ui/Card';
 import { Button } from '@/components/ui/Button';
 import { Input } from '@/components/ui/Input';
 import { Badge } from '@/components/ui/Badge';
+import { useProfile } from '@/contexts/ProfileContext';
 
 const profileSchema = z.object({
   name: z.string().min(2, 'Name must be at least 2 characters').max(60),
@@ -42,11 +41,9 @@ type ProfileFormData = z.infer<typeof profileSchema>;
 
 export default function ProfilePage() {
   const { data: session, update: updateSession } = useSession();
+  const { profile, isLoading: isFetching, refresh, updateProfile } = useProfile();
   const fileInputRef = useRef<HTMLInputElement>(null);
 
-  // States
-  const [profileData, setProfileData] = useState<any>(null);
-  const [isFetching, setIsFetching] = useState(true);
   const [isLoading, setIsLoading] = useState(false);
   const [isUploading, setIsUploading] = useState(false);
   const [success, setSuccess] = useState<string | null>(null);
@@ -67,36 +64,17 @@ export default function ProfilePage() {
     },
   });
 
-  // 1. Fetch Real-time Profile Data
-  const fetchProfileData = async () => {
-    try {
-      setIsFetching(true);
-      const res = await fetch('/api/user/profile');
-      const json = await res.json();
-      
-      if (res.ok && json.success) {
-        setProfileData(json.data);
-        reset({
-          name: json.data.name,
-          email: json.data.email,
-          phone: json.data.phone || '',
-          location: json.data.location || '',
-        });
-      } else {
-        setError(json.message || 'Failed to retrieve profile data.');
-      }
-    } catch {
-      setError('A network exception occurred while fetching your profile.');
-    } finally {
-      setIsFetching(false);
-    }
-  };
-
   useEffect(() => {
-    fetchProfileData();
-  }, [reset]);
+    if (profile) {
+      reset({
+        name: profile.name || '',
+        email: profile.email || '',
+        phone: profile.phone || '',
+        location: profile.location || '',
+      });
+    }
+  }, [profile, reset]);
 
-  // 2. Form Submit Handler
   const onSubmit = async (data: ProfileFormData) => {
     setIsLoading(true);
     setSuccess(null);
@@ -115,7 +93,14 @@ export default function ProfilePage() {
         throw new Error(result.message || 'Failed to update client profile records.');
       }
 
-      // Synchronize with NextAuth Session Storage
+      // Instantly propagate updates across dashboard components
+      updateProfile({
+        name: data.name,
+        phone: data.phone,
+        location: data.location,
+      });
+
+      // Sync with NextAuth session
       await updateSession({
         ...session,
         user: {
@@ -125,8 +110,8 @@ export default function ProfilePage() {
       });
 
       setSuccess('Client dossier updated and re-verified.');
-      setProfileData((prev: any) => ({ ...prev, ...result.data }));
-      reset(data); // reset form dirty state with new data
+      reset(data);
+      await refresh();
     } catch (err: any) {
       setError(err?.message || 'An error occurred during synchronization.');
     } finally {
@@ -134,12 +119,10 @@ export default function ProfilePage() {
     }
   };
 
-  // 3. Avatar Upload Handler
   const handleAvatarChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
 
-    // Client-side payload size validation (Max 4MB)
     if (file.size > 4 * 1024 * 1024) {
       setError('File size exceeds the 4MB limit.');
       return;
@@ -164,10 +147,10 @@ export default function ProfilePage() {
         throw new Error(data.message || 'Failed to complete image upload.');
       }
 
-      // Update Local State UI
-      setProfileData((prev: any) => ({ ...prev, avatar: data.url }));
+      // Broadcast new avatar across all dashboard components in real-time
+      updateProfile({ avatar: data.url });
 
-      // Sync Avatar URL with NextAuth Session
+      // Sync with NextAuth session
       await updateSession({
         ...session,
         user: {
@@ -181,10 +164,11 @@ export default function ProfilePage() {
       setError(err?.message || 'Failed to upload profile photo.');
     } finally {
       setIsUploading(false);
+      if (fileInputRef.current) fileInputRef.current.value = '';
     }
   };
 
-  if (isFetching) {
+  if (isFetching || !profile) {
     return (
       <div className="flex flex-col items-center justify-center min-h-[50vh] space-y-4">
         <Loader2 className="h-10 w-10 text-gold animate-spin" />
@@ -195,9 +179,12 @@ export default function ProfilePage() {
     );
   }
 
+  const memberSince = profile?.createdAt
+    ? new Date(profile.createdAt).getFullYear()
+    : new Date().getFullYear();
+
   return (
     <div className="space-y-8 animate-fade-in">
-      {/* Page Header */}
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 border-b border-border/60 pb-5">
         <div>
           <Badge variant="gold" size="sm" className="mb-2">
@@ -215,35 +202,32 @@ export default function ProfilePage() {
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">
-        {/* Left Column: Client Dossier Badge & Credentials (4 Cols) */}
         <div className="lg:col-span-4 space-y-6">
           <Card className="p-6 bg-graphite/95 border-border/80 shadow-dropdown text-center relative overflow-hidden">
-            {/* Ambient Background Accent */}
             <div className="absolute -top-12 -right-12 w-32 h-32 bg-gold/5 rounded-full blur-2xl pointer-events-none" />
 
             <div className="relative inline-block mx-auto mb-4">
-              <div className="w-24 h-24 rounded-full bg-gold/15 border-2 border-gold/40 flex items-center justify-center overflow-hidden shadow-glow">
-                {profileData?.avatar ? (
+              <div className="w-24 h-24 rounded-full bg-gold/15 border-2 border-gold/40 flex items-center justify-center overflow-hidden shadow-glow relative">
+                {profile?.avatar ? (
                   <img
-                    src={profileData.avatar}
-                    alt={profileData?.name || 'Client Avatar'}
+                    src={profile.avatar}
+                    alt={profile?.name || 'Client Avatar'}
                     className="w-full h-full object-cover"
+                    key={profile.avatar}
                   />
                 ) : (
                   <span className="text-3xl font-serif text-gold">
-                    {profileData?.name?.[0]?.toUpperCase() || 'C'}
+                    {profile?.name?.[0]?.toUpperCase() || 'C'}
                   </span>
                 )}
 
-                {/* Overlaid upload loader spinner */}
                 {isUploading && (
-                  <div className="absolute inset-0 bg-obsidian/75 flex items-center justify-center backdrop-blur-xs">
+                  <div className="absolute inset-0 bg-obsidian/75 flex items-center justify-center backdrop-blur-sm">
                     <Loader2 className="h-6 w-6 text-gold animate-spin" />
                   </div>
                 )}
               </div>
 
-              {/* Hidden File Input */}
               <input
                 type="file"
                 ref={fileInputRef}
@@ -265,30 +249,28 @@ export default function ProfilePage() {
             </div>
 
             <h2 className="text-lg font-serif text-primary">
-              {profileData?.name || 'Private Client'}
+              {profile?.name || 'Private Client'}
             </h2>
-            <p className="text-xs text-muted font-mono mt-1">{profileData?.email}</p>
+            <p className="text-xs text-muted font-mono mt-1">{profile?.email}</p>
 
             <div className="flex items-center justify-center gap-2 mt-4">
               <Badge variant="gold" size="sm" leftIcon={<ShieldCheck className="h-3.5 w-3.5" />}>
-                {profileData?.role === 'CUSTOMER' ? 'Tier 1 Verified' : profileData?.role}
+                {profile?.role === 'CUSTOMER' ? 'Tier 1 Verified' : profile?.role || 'Tier 1 Verified'}
               </Badge>
             </div>
 
-            {/* Dossier Meta Stats */}
             <div className="mt-6 pt-6 border-t border-border/60 grid grid-cols-2 gap-3 text-left">
               <div className="p-3 bg-charcoal/50 rounded border border-border/40">
                 <span className="block text-[10px] font-mono text-muted uppercase">Allocations</span>
-                <span className="text-sm font-serif text-primary">3 Active</span>
+                <span className="text-sm font-serif text-primary">Active</span>
               </div>
               <div className="p-3 bg-charcoal/50 rounded border border-border/40">
                 <span className="block text-[10px] font-mono text-muted uppercase">Member Since</span>
-                <span className="text-sm font-serif text-primary">2023</span>
+                <span className="text-sm font-serif text-primary">{memberSince}</span>
               </div>
             </div>
           </Card>
 
-          {/* Quick Concierge Support Card */}
           <Card className="p-5 bg-charcoal/40 border-border/60">
             <div className="flex items-start gap-3">
               <Sparkles className="h-5 w-5 text-gold shrink-0 mt-0.5" />
@@ -302,7 +284,6 @@ export default function ProfilePage() {
           </Card>
         </div>
 
-        {/* Right Column: Editable Profile & Protocol Settings (8 Cols) */}
         <div className="lg:col-span-8 space-y-6">
           <Card className="p-6 sm:p-8 bg-graphite/95 border-border/80 shadow-dropdown">
             <h2 className="text-lg font-serif font-light text-primary mb-2">
@@ -379,7 +360,6 @@ export default function ProfilePage() {
             </form>
           </Card>
 
-          {/* Security & Authentication Protocol Box */}
           <Card className="p-6 sm:p-8 bg-graphite/95 border-border/80 shadow-dropdown">
             <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-6 border-b border-border/60">
               <div>

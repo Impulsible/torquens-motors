@@ -1,276 +1,208 @@
-/* eslint-disable @typescript-eslint/no-explicit-any */
 'use client';
 
-import React, { useState } from 'react';
+import React from 'react';
 import Link from 'next/link';
-import { useSession } from 'next-auth/react';
-import { useForm } from 'react-hook-form';
-import { zodResolver } from '@hookform/resolvers/zod';
-import { z } from 'zod';
 import {
-  User,
-  Mail,
-  Phone,
-  Camera,
-  Save,
+  Car,
+  MessageSquareText,
+  BookmarkCheck,
   ShieldCheck,
   Sparkles,
-  KeyRound,
-  CheckCircle2,
-  AlertCircle,
+  ArrowRight,
   Clock,
-  Globe2,
+  Compass,
+  Headphones,
+  Loader2,
+  CheckCircle2,
 } from 'lucide-react';
 
 import { Card } from '@/components/ui/Card';
 import { Button } from '@/components/ui/Button';
-import { Input } from '@/components/ui/Input';
 import { Badge } from '@/components/ui/Badge';
+import { useProfile } from '@/contexts/ProfileContext';
 
-const profileSchema = z.object({
-  name: z.string().min(2, 'Name must be at least 2 characters').max(60),
-  email: z.string().email('Invalid email address'),
-  phone: z.string().min(6, 'Please provide a valid contact number').optional().or(z.literal('')),
-  location: z.string().optional(),
-});
+export default function DashboardOverviewPage() {
+  const { profile, isLoading } = useProfile();
 
-type ProfileFormData = z.infer<typeof profileSchema>;
+  if (isLoading) {
+    return (
+      <div className="flex flex-col items-center justify-center min-h-[60vh] space-y-4">
+        <Loader2 className="h-10 w-10 text-gold animate-spin" />
+        <p className="text-xs text-muted font-mono uppercase tracking-widest">
+          Decrypting Vault Access...
+        </p>
+      </div>
+    );
+  }
 
-export default function ProfilePage() {
-  const { data: session, update } = useSession();
-  const [isLoading, setIsLoading] = useState(false);
-  const [success, setSuccess] = useState<string | null>(null);
-  const [error, setError] = useState<string | null>(null);
-
-  const {
-    register,
-    handleSubmit,
-    formState: { errors, isDirty },
-  } = useForm<ProfileFormData>({
-    resolver: zodResolver(profileSchema),
-    defaultValues: {
-      name: session?.user?.name || '',
-      email: session?.user?.email || '',
-      phone: '+44 20 7946 0991',
-      location: 'London, United Kingdom',
-    },
-  });
-
-  const onSubmit = async (data: ProfileFormData) => {
-    setIsLoading(true);
-    setSuccess(null);
-    setError(null);
-
-    try {
-      const response = await fetch('/api/user/profile', {
-        method: 'PUT',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(data),
-      });
-
-      if (!response.ok) {
-        throw new Error('Failed to update client profile records.');
-      }
-
-      await update({
-        ...session,
-        user: {
-          ...session?.user,
-          name: data.name,
-        },
-      });
-
-      setSuccess('Client Dossier updated and re-verified.');
-    } catch (err: any) {
-      setError(err?.message || 'An error occurred during synchronization.');
-    } finally {
-      setIsLoading(false);
-    }
-  };
+  const firstName = profile?.name?.split(' ')[0] || 'Client';
 
   return (
     <div className="space-y-8 animate-fade-in">
-      {/* Page Header */}
-      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 border-b border-border/60 pb-5">
-        <div>
-          <Badge variant="gold" size="sm" className="mb-2">
-            Verified Client Dossier
-          </Badge>
-          <h1 className="text-2xl sm:text-3xl font-serif font-light text-primary tracking-tight">
-            Account Credentials
-          </h1>
-        </div>
+      {/* Greeting */}
+      <div className="relative rounded-2xl overflow-hidden bg-graphite/95 border border-border/80 shadow-dropdown p-8 sm:p-10">
+        <div
+          className="absolute top-0 right-0 rounded-full bg-gold/5 blur-[120px] pointer-events-none translate-x-1/3 -translate-y-1/3"
+          style={{ width: 500, height: 500 }}
+          aria-hidden
+        />
+        <div className="absolute inset-0 checkerboard-bg opacity-[0.02] pointer-events-none" aria-hidden />
 
-        <div className="flex items-center gap-2 text-xs font-mono text-muted bg-charcoal/60 px-3.5 py-1.5 rounded-full border border-border/80 w-fit">
-          <Clock className="h-3.5 w-3.5 text-gold" />
-          <span>Last Security Audit: Today</span>
+        <div className="relative z-10 flex flex-col md:flex-row md:items-end justify-between gap-6">
+          <div className="space-y-3">
+            <div className="flex items-center gap-3">
+              <Badge variant="gold" size="sm" leftIcon={<ShieldCheck className="h-3 w-3" />}>
+                Secure Session Active
+              </Badge>
+              <span className="text-[10px] font-mono text-muted uppercase tracking-widest hidden sm:inline-block">
+                Tier 1 Clearance
+              </span>
+            </div>
+
+            <h1 className="text-3xl sm:text-4xl md:text-5xl font-serif font-light text-primary tracking-tight">
+              Welcome back, <span className="text-gold font-medium">{firstName}</span>.
+            </h1>
+
+            <p className="text-sm text-secondary font-sans max-w-xl leading-relaxed">
+              Your private automotive portfolio and acquisition requests are synchronized. Review
+              your tracked assets or contact the concierge desk for immediate assistance.
+            </p>
+          </div>
+
+          <Link href="/vehicles">
+            <Button variant="gold" rightIcon={<ArrowRight className="h-4 w-4" />}>
+              Explore Showroom
+            </Button>
+          </Link>
         </div>
       </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">
-        {/* Left Column: Client Dossier Badge & Credentials (4 Cols) */}
-        <div className="lg:col-span-4 space-y-6">
-          <Card className="p-6 bg-graphite/95 border-border/80 shadow-dropdown text-center relative overflow-hidden">
-            {/* Ambient Background Accent */}
-            <div className="absolute -top-12 -right-12 w-32 h-32 bg-gold/5 rounded-full blur-2xl pointer-events-none" />
-
-            <div className="relative inline-block mx-auto mb-4">
-              <div className="w-24 h-24 rounded-full bg-gold/15 border-2 border-gold/40 flex items-center justify-center shadow-glow">
-                <span className="text-3xl font-serif text-gold">
-                  {session?.user?.name?.[0]?.toUpperCase() || 'C'}
-                </span>
-              </div>
-              <button
-                type="button"
-                aria-label="Upload new dossier portrait"
-                className="absolute bottom-0 right-0 p-2 rounded-full bg-gold text-obsidian hover:bg-gold-hover transition-transform hover:scale-105 shadow-md"
-              >
-                <Camera className="h-4 w-4" />
-              </button>
+      {/* Metrics */}
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+        <Card className="p-6 bg-graphite/60 border-border/60 hover:bg-charcoal/80 transition-colors group">
+          <div className="flex items-start justify-between mb-4">
+            <div className="p-3 rounded-lg bg-gold/10 border border-gold/20 text-gold group-hover:scale-110 transition-transform">
+              <BookmarkCheck className="h-6 w-6" />
             </div>
+            <span className="text-3xl font-serif font-light text-primary">0</span>
+          </div>
+          <div>
+            <h3 className="text-sm font-sans font-medium text-primary mb-1">Tracked Assets</h3>
+            <p className="text-xs text-muted font-sans mb-4">
+              Vehicles saved to your private allocation list.
+            </p>
+            <Link
+              href="/dashboard/saved"
+              className="text-xs text-gold hover:text-gold-hover flex items-center gap-1 font-medium transition-colors"
+            >
+              View Collection <ArrowRight className="h-3 w-3" />
+            </Link>
+          </div>
+        </Card>
 
-            <h2 className="text-lg font-serif text-primary">
-              {session?.user?.name || 'Private Client'}
-            </h2>
-            <p className="text-xs text-muted font-mono mt-1">{session?.user?.email}</p>
-
-            <div className="flex items-center justify-center gap-2 mt-4">
-              <Badge variant="gold" size="sm" leftIcon={<ShieldCheck className="h-3.5 w-3.5" />}>
-                Tier 1 Verified
-              </Badge>
+        <Card className="p-6 bg-graphite/60 border-border/60 hover:bg-charcoal/80 transition-colors group">
+          <div className="flex items-start justify-between mb-4">
+            <div className="p-3 rounded-lg bg-emerald-500/10 border border-emerald-500/20 text-emerald-400 group-hover:scale-110 transition-transform">
+              <Headphones className="h-6 w-6" />
             </div>
+            <span className="text-3xl font-serif font-light text-primary">0</span>
+          </div>
+          <div>
+            <h3 className="text-sm font-sans font-medium text-primary mb-1">Active Inquiries</h3>
+            <p className="text-xs text-muted font-sans mb-4">
+              Ongoing negotiations and sourcing requests.
+            </p>
+            <Link
+              href="/dashboard/enquiries"
+              className="text-xs text-emerald-400 hover:text-emerald-300 flex items-center gap-1 font-medium transition-colors"
+            >
+              Open Desk <ArrowRight className="h-3 w-3" />
+            </Link>
+          </div>
+        </Card>
 
-            {/* Dossier Meta Stats */}
-            <div className="mt-6 pt-6 border-t border-border/60 grid grid-cols-2 gap-3 text-left">
-              <div className="p-3 bg-charcoal/50 rounded border border-border/40">
-                <span className="block text-[10px] font-mono text-muted uppercase">Allocations</span>
-                <span className="text-sm font-serif text-primary">3 Active</span>
-              </div>
-              <div className="p-3 bg-charcoal/50 rounded border border-border/40">
-                <span className="block text-[10px] font-mono text-muted uppercase">Member Since</span>
-                <span className="text-sm font-serif text-primary">2023</span>
-              </div>
+        <Card className="p-6 bg-graphite/60 border-border/60 hover:bg-charcoal/80 transition-colors group sm:col-span-2 lg:col-span-1">
+          <div className="flex items-start justify-between mb-4">
+            <div className="p-3 rounded-lg bg-blue-500/10 border border-blue-500/20 text-blue-400 group-hover:scale-110 transition-transform">
+              <MessageSquareText className="h-6 w-6" />
             </div>
-          </Card>
+            <span className="text-3xl font-serif font-light text-primary">0</span>
+          </div>
+          <div>
+            <h3 className="text-sm font-sans font-medium text-primary mb-1">Secure Messages</h3>
+            <p className="text-xs text-muted font-sans mb-4">
+              Direct communications from verified dealers.
+            </p>
+            <Link
+              href="/dashboard/messages"
+              className="text-xs text-blue-400 hover:text-blue-300 flex items-center gap-1 font-medium transition-colors"
+            >
+              Open Inbox <ArrowRight className="h-3 w-3" />
+            </Link>
+          </div>
+        </Card>
+      </div>
 
-          {/* Quick Concierge Support Card */}
-          <Card className="p-5 bg-charcoal/40 border-border/60">
-            <div className="flex items-start gap-3">
-              <Sparkles className="h-5 w-5 text-gold shrink-0 mt-0.5" />
-              <div className="text-xs">
-                <p className="font-medium text-primary">Dedicated Account Liaison</p>
-                <p className="text-muted mt-1 leading-relaxed">
-                  For allocation amendments, custom vehicle sourcing, or discrete acquisitions, contact your private representative.
-                </p>
-              </div>
+      {/* Activity + Concierge */}
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 lg:gap-8 items-start">
+        <div className="lg:col-span-2 space-y-6">
+          <h2 className="text-lg font-serif font-light text-primary flex items-center gap-2">
+            <Clock className="h-4 w-4 text-gold" />
+            Recent Vault Activity
+          </h2>
+
+          <Card className="p-8 bg-graphite/50 border-dashed border-border flex flex-col items-center justify-center text-center min-h-62.5">
+            <div className="w-16 h-16 rounded-full bg-charcoal flex items-center justify-center mb-4 border border-border/60">
+              <Compass className="h-6 w-6 text-muted" />
             </div>
+            <h3 className="text-base font-serif text-primary mb-2">No Recent Acquisitions</h3>
+            <p className="text-xs text-muted font-sans max-w-sm mb-6 leading-relaxed">
+              Your vault timeline is currently empty. Explore our curated network of high-performance
+              and luxury vehicles to begin.
+            </p>
+            <Link href="/vehicles">
+              <Button variant="secondary" size="sm" rightIcon={<Car className="h-4 w-4" />}>
+                Discover Vehicles
+              </Button>
+            </Link>
           </Card>
         </div>
 
-        {/* Right Column: Editable Profile & Protocol Settings (8 Cols) */}
-        <div className="lg:col-span-8 space-y-6">
-          <Card className="p-6 sm:p-8 bg-graphite/95 border-border/80 shadow-dropdown">
-            <h2 className="text-lg font-serif font-light text-primary mb-2">
-              Personal Information
-            </h2>
-            <p className="text-xs text-secondary mb-6 font-sans">
-              Ensure contact information matches your registered legal documentation for escrow agreements.
+        <div className="lg:col-span-1 space-y-6">
+          <h2 className="text-lg font-serif font-light text-primary flex items-center gap-2">
+            <Sparkles className="h-4 w-4 text-gold" />
+            Private Concierge
+          </h2>
+
+          <Card className="p-6 bg-graphite/95 border-border/80 shadow-dropdown relative overflow-hidden">
+            <div className="absolute top-0 right-0 w-32 h-32 bg-gold/10 blur-2xl rounded-full translate-x-1/2 -translate-y-1/2 pointer-events-none" />
+
+            <h3 className="text-sm font-sans font-semibold text-primary mb-2">Bespoke Sourcing</h3>
+            <p className="text-xs text-secondary font-sans mb-5 leading-relaxed">
+              Cannot find the exact specification you desire? Allow our private concierge team to
+              source it directly from our global network.
             </p>
 
-            {success && (
-              <div className="mb-6 flex items-start gap-2.5 p-3.5 bg-emerald-500/10 border border-emerald-500/20 text-emerald-400 rounded-md text-xs font-sans animate-fade-in">
-                <CheckCircle2 className="h-4 w-4 shrink-0 mt-0.5" />
-                <span>{success}</span>
-              </div>
-            )}
+            <ul className="space-y-3 mb-6">
+              <li className="flex items-center gap-2 text-xs text-muted font-sans">
+                <CheckCircle2 className="h-3.5 w-3.5 text-gold shrink-0" />
+                Off-market allocations
+              </li>
+              <li className="flex items-center gap-2 text-xs text-muted font-sans">
+                <CheckCircle2 className="h-3.5 w-3.5 text-gold shrink-0" />
+                Confidential negotiations
+              </li>
+              <li className="flex items-center gap-2 text-xs text-muted font-sans">
+                <CheckCircle2 className="h-3.5 w-3.5 text-gold shrink-0" />
+                Door-to-door secure logistics
+              </li>
+            </ul>
 
-            {error && (
-              <div className="mb-6 flex items-start gap-2.5 p-3.5 bg-red-500/10 border border-red-500/20 text-red-400 rounded-md text-xs font-sans animate-fade-in">
-                <AlertCircle className="h-4 w-4 shrink-0 mt-0.5" />
-                <span>{error}</span>
-              </div>
-            )}
-
-            <form onSubmit={handleSubmit(onSubmit)} className="space-y-5">
-              <Input
-                label="Full Legal Name"
-                placeholder="Lord Harrison Sterling"
-                leftIcon={<User className="h-4 w-4" />}
-                {...register('name')}
-                error={errors.name?.message}
-                required
-              />
-
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                <Input
-                  label="Registered Email (Immutable)"
-                  type="email"
-                  placeholder="client@torquens.com"
-                  leftIcon={<Mail className="h-4 w-4" />}
-                  {...register('email')}
-                  disabled
-                  helper="Contact concierge to adjust primary email"
-                />
-
-                <Input
-                  label="Primary Phone"
-                  type="tel"
-                  placeholder="+44 20 7946 0991"
-                  leftIcon={<Phone className="h-4 w-4" />}
-                  {...register('phone')}
-                  error={errors.phone?.message}
-                />
-              </div>
-
-              <Input
-                label="Jurisdiction / Primary Residence"
-                placeholder="Mayfair, London, United Kingdom"
-                leftIcon={<Globe2 className="h-4 w-4" />}
-                {...register('location')}
-                error={errors.location?.message}
-              />
-
-              <div className="pt-2 flex items-center justify-end">
-                <Button
-                  type="submit"
-                  variant="gold"
-                  isLoading={isLoading}
-                  disabled={!isDirty || isLoading}
-                  leftIcon={<Save className="h-4 w-4" />}
-                >
-                  Save Dossier
-                </Button>
-              </div>
-            </form>
-          </Card>
-
-          {/* Security & Authentication Protocol Box */}
-          <Card className="p-6 sm:p-8 bg-graphite/95 border-border/80 shadow-dropdown">
-            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-6 border-b border-border/60">
-              <div>
-                <h3 className="text-base font-serif text-primary">Vault Security Key</h3>
-                <p className="text-xs text-muted mt-1 font-sans">
-                  Manage the cryptographic key used to authenticate into your private vault.
-                </p>
-              </div>
-              <Link href="/auth/change-password">
-                <Button variant="secondary" size="sm" leftIcon={<KeyRound className="h-3.5 w-3.5" />}>
-                  Change Key
-                </Button>
-              </Link>
-            </div>
-
-            <div className="mt-6 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-              <div>
-                <h3 className="text-base font-serif text-primary">Two-Factor Authentication (2FA)</h3>
-                <p className="text-xs text-muted mt-1 font-sans">
-                  Hardware token or authenticator verification on each acquisition request.
-                </p>
-              </div>
-              <Badge variant="success" size="sm">
-                Enforced (Active)
-              </Badge>
-            </div>
+            <Link href="/dashboard/enquiries" className="block w-full">
+              <Button variant="outline" fullWidth className="text-xs">
+                Initiate Sourcing Request
+              </Button>
+            </Link>
           </Card>
         </div>
       </div>

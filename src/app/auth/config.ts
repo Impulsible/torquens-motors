@@ -59,9 +59,13 @@ export const authConfig: NextAuthOptions = {
         }
 
         // Check if password matches
+        if (!user.password) {
+          throw new Error("Invalid email or password");
+        }
+
         const isValid = await bcrypt.compare(
-          credentials.password as string,
-          user.password,
+            credentials.password as string,
+            user.password
         );
 
         if (!isValid) {

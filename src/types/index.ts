@@ -5,31 +5,31 @@ export interface IUser {
   id: string;
   name: string;
   email: string;
-  password: string;
+  password?: string;
   role: UserRole;
   avatar?: string | null;
   phone?: string | null;
   emailVerified: boolean;
-  lastLogin: Date | null;
+  lastLogin?: Date | null;
   preferences?: {
     currency: string;
     notifications: boolean;
     savedSearches: string[];
   };
-  createdAt: Date;
-  updatedAt: Date;
+  createdAt?: Date;
+  updatedAt?: Date;
 }
 
 export interface IDealer {
   id: string;
   name: string;
-  description: string;
+  description?: string;
   logo?: string | null;
   location: string;
   phone: string;
   email: string;
   verified: boolean;
-  owner: string | IUser;
+  owner?: string | IUser;
   website?: string | null;
   socialMedia?: {
     instagram?: string | null;
@@ -46,21 +46,20 @@ export interface IDealer {
     saturday?: string | null;
     sunday?: string | null;
   };
-  rating: number;
-  totalReviews: number;
-  isActive: boolean;
-  createdAt: Date;
-  updatedAt: Date;
+  rating?: number;
+  totalReviews?: number;
+  isActive?: boolean;
+  createdAt?: Date;
+  updatedAt?: Date;
 }
 
-export type VehicleStatus = 'DRAFT' | 'PENDING_REVIEW' | 'APPROVED' | 'PUBLISHED' | 'SOLD' | 'ARCHIVED';
+export type VehicleStatus = 'DRAFT' | 'PENDING_REVIEW' | 'APPROVED' | 'PUBLISHED' | 'AVAILABLE' | 'SOLD' | 'ARCHIVED';
 export type VerificationStatus = 'UNVERIFIED' | 'PENDING' | 'VERIFIED' | 'REJECTED';
 export type FuelType = 'Petrol' | 'Diesel' | 'Electric' | 'Hybrid' | 'Plug-in Hybrid';
 export type TransmissionType = 'Automatic' | 'Manual' | 'Semi-Automatic';
 export type DrivetrainType = 'FWD' | 'RWD' | 'AWD' | '4WD';
 
 export interface IVehicle {
-  // ✅ Remove the index signature [x: string]: number;
   id: string;
   make: string;
   model: string;
@@ -68,28 +67,30 @@ export interface IVehicle {
   price: number;
   currency: string;
   mileage: number;
-  transmission: TransmissionType;
-  fuelType: FuelType;
-  engine: string;
-  horsepower: number;
-  drivetrain: DrivetrainType;
-  bodyType: string;
+  transmission: TransmissionType | string;
+  fuelType: FuelType | string;
+  engine?: string;
+  horsepower?: number;
+  power?: string | number;
+  drivetrain?: DrivetrainType | string;
+  bodyType?: string;
   location: string;
   images: string[];
-  features: string[];
-  description: string;
-  dealer: string | IDealer;
-  verified: VerificationStatus;
-  status: VehicleStatus;
-  slug: string;
-  views: number;
-  savedCount: number;
-  enquiryCount: number;
-  // Add power field for comparison
-  power?: number;
-  createdAt: Date;
-  updatedAt: Date;
+  features?: string[];
+  description?: string;
+  dealer?: string | IDealer;
+  verified?: VerificationStatus | string | boolean;
+  status: VehicleStatus | string;
+  slug?: string;
+  views?: number;
+  savedCount?: number;
+  enquiryCount?: number;
+  createdAt?: Date;
+  updatedAt?: Date;
 }
+
+// Alias for backward compatibility
+export type Vehicle = IVehicle;
 
 export interface IEnquiry {
   id: string;
@@ -100,29 +101,29 @@ export interface IEnquiry {
   vehicle: string | IVehicle;
   status: 'NEW' | 'CONTACTED' | 'NEGOTIATING' | 'CLOSED' | 'CANCELLED';
   preferredContact: 'EMAIL' | 'PHONE' | 'WHATSAPP';
-  dealerResponded: boolean;
-  respondedAt: Date | null;
+  dealerResponded?: boolean;
+  respondedAt?: Date | null;
   notes?: string | null;
-  createdAt: Date;
-  updatedAt: Date;
+  createdAt?: Date;
+  updatedAt?: Date;
 }
 
 export interface ISavedVehicle {
   id: string;
   user: string | IUser;
   vehicle: string | IVehicle;
-  savedAt: Date;
-  createdAt: Date;
-  updatedAt: Date;
+  savedAt?: Date;
+  createdAt?: Date;
+  updatedAt?: Date;
 }
 
 export interface IComparison {
   id: string;
-  user: string | IUser;
+  user?: string | IUser;
   vehicles: string[] | IVehicle[];
   name?: string;
-  createdAt: Date;
-  updatedAt: Date;
+  createdAt?: Date;
+  updatedAt?: Date;
 }
 
 export interface IMessage {
@@ -131,10 +132,10 @@ export interface IMessage {
   receiver: string | IUser;
   content: string;
   read: boolean;
-  readAt: Date | null;
+  readAt?: Date | null;
   enquiry?: string | IEnquiry;
-  createdAt: Date;
-  updatedAt: Date;
+  createdAt?: Date;
+  updatedAt?: Date;
 }
 
 export interface INotification {
@@ -144,10 +145,10 @@ export interface INotification {
   title: string;
   message: string;
   read: boolean;
-  readAt: Date | null;
+  readAt?: Date | null;
   data?: any;
-  createdAt: Date;
-  updatedAt: Date;
+  createdAt?: Date;
+  updatedAt?: Date;
 }
 
 export interface IReview {
@@ -158,9 +159,9 @@ export interface IReview {
   title: string;
   content: string;
   verified: boolean;
-  helpfulCount: number;
-  createdAt: Date;
-  updatedAt: Date;
+  helpfulCount?: number;
+  createdAt?: Date;
+  updatedAt?: Date;
 }
 
 export interface IVerification {
@@ -173,8 +174,8 @@ export interface IVerification {
   reviewedBy?: string | IUser;
   reviewedAt?: Date;
   expiresAt?: Date;
-  createdAt: Date;
-  updatedAt: Date;
+  createdAt?: Date;
+  updatedAt?: Date;
 }
 
 export interface IReservation {
@@ -189,8 +190,8 @@ export interface IReservation {
   confirmedAt?: Date;
   cancelledAt?: Date;
   notes?: string;
-  createdAt: Date;
-  updatedAt: Date;
+  createdAt?: Date;
+  updatedAt?: Date;
 }
 
 export interface IPayment {
@@ -206,8 +207,8 @@ export interface IPayment {
   metadata?: any;
   completedAt?: Date;
   refundedAt?: Date;
-  createdAt: Date;
-  updatedAt: Date;
+  createdAt?: Date;
+  updatedAt?: Date;
 }
 
 export interface ITransaction {
@@ -221,8 +222,8 @@ export interface ITransaction {
   reference: string;
   metadata?: any;
   completedAt?: Date;
-  createdAt: Date;
-  updatedAt: Date;
+  createdAt?: Date;
+  updatedAt?: Date;
 }
 
 export interface ISubscription {
@@ -239,8 +240,8 @@ export interface ISubscription {
   paymentMethod: string;
   stripeSubscriptionId?: string;
   cancelledAt?: Date;
-  createdAt: Date;
-  updatedAt: Date;
+  createdAt?: Date;
+  updatedAt?: Date;
 }
 
 export interface ICollection {
@@ -253,8 +254,8 @@ export interface ICollection {
   featured: boolean;
   published: boolean;
   metadata?: any;
-  createdAt: Date;
-  updatedAt: Date;
+  createdAt?: Date;
+  updatedAt?: Date;
 }
 
 export interface ICategory {
@@ -265,6 +266,6 @@ export interface ICategory {
   image?: string;
   parent?: string | ICategory;
   metadata?: any;
-  createdAt: Date;
-  updatedAt: Date;
+  createdAt?: Date;
+  updatedAt?: Date;
 }
