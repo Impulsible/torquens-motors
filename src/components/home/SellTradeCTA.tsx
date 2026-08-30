@@ -1,5 +1,6 @@
 'use client';
 
+import React from 'react';
 import Link from 'next/link';
 import {
   ArrowRight,
@@ -46,9 +47,12 @@ const trustStats = [
 export function SellTradeCTA() {
   return (
     <section className="relative py-16 md:py-24 bg-obsidian overflow-hidden">
-      {/* Atmosphere */}
       <div className="pointer-events-none absolute inset-0 checkerboard-bg opacity-[0.03]" />
-      <div className="pointer-events-none absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-200 h-100 bg-gold/5 blur-[130px] rounded-full" />
+      <div
+        aria-hidden="true"
+        className="pointer-events-none absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 rounded-full bg-gold/5 blur-[130px]"
+        style={{ width: 800, height: 400 }}
+      />
 
       <div className="container-torquens relative z-10">
         <Card
@@ -57,20 +61,22 @@ export function SellTradeCTA() {
             'p-6 sm:p-8 md:p-10 lg:p-12'
           )}
         >
-          {/* Decorative ambient orbs */}
-          <div className="pointer-events-none absolute -top-24 -right-24 w-72 h-72 bg-gold/10 rounded-full blur-3xl" />
-          <div className="pointer-events-none absolute -bottom-28 -left-20 w-64 h-64 bg-gold/5 rounded-full blur-3xl" />
+          <div
+            aria-hidden="true"
+            className="pointer-events-none absolute -top-24 -right-24 rounded-full bg-gold/10 blur-3xl"
+            style={{ width: 288, height: 288 }}
+          />
+          <div
+            aria-hidden="true"
+            className="pointer-events-none absolute -bottom-28 -left-20 rounded-full bg-gold/5 blur-3xl"
+            style={{ width: 256, height: 256 }}
+          />
           <div className="pointer-events-none absolute top-0 left-0 right-0 h-0.5 bg-linear-to-r from-transparent via-gold to-transparent" />
-
-          {/* Soft checkerboard wash */}
           <div className="pointer-events-none absolute inset-0 checkerboard-bg opacity-[0.04]" />
 
           <div className="relative z-10 grid grid-cols-1 lg:grid-cols-12 gap-10 lg:gap-12 items-center">
-            {/* ----------------------------------------------------------- */}
-            {/* LEFT — Copy, steps, stats                                   */}
-            {/* ----------------------------------------------------------- */}
+            {/* LEFT — Copy, steps, stats */}
             <div className="lg:col-span-7 space-y-8">
-              {/* Eyebrow */}
               <div className="flex flex-wrap items-center gap-2.5">
                 <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-gold/10 border border-gold/20 text-gold text-[11px] font-sans font-semibold uppercase tracking-widest">
                   <Sparkles size={12} />
@@ -84,20 +90,15 @@ export function SellTradeCTA() {
                 </Badge>
               </div>
 
-              {/* Headline */}
               <div className="space-y-3">
                 <h2 className="text-3xl sm:text-4xl md:text-[2.75rem] font-serif font-light text-primary tracking-tight leading-[1.15]">
-                  Ready to Sell or Trade{' '}
-                  <span className="text-gold">Your Vehicle?</span>
+                  Ready to Sell or Trade <span className="text-gold">Your Vehicle?</span>
                 </h2>
                 <p className="text-secondary text-sm md:text-base font-sans leading-relaxed max-w-xl">
-                  Receive a competitive market valuation and connect with verified
-                  collectors, dealers, and private buyers through the TORQUENS
-                  marketplace — privately, securely, and on your terms.
+                  Receive a competitive market valuation and connect with verified collectors, dealers, and private buyers through the TORQUENS marketplace — privately, securely, and on your terms.
                 </p>
               </div>
 
-              {/* Process Steps */}
               <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
                 {processSteps.map((item, index) => {
                   const Icon = item.icon;
@@ -118,14 +119,11 @@ export function SellTradeCTA() {
                           className="text-gold/70 group-hover/step:text-gold transition-colors"
                         />
                       </div>
-                      <h3 className="text-sm font-serif font-light text-primary">
-                        {item.title}
-                      </h3>
+                      <h3 className="text-sm font-serif font-light text-primary">{item.title}</h3>
                       <p className="text-[11px] font-sans text-secondary mt-0.5">
                         {item.description}
                       </p>
 
-                      {/* Connector line on desktop */}
                       {index < processSteps.length - 1 && (
                         <div className="hidden sm:block absolute top-1/2 -right-1.5 w-3 h-px bg-border" />
                       )}
@@ -134,15 +132,11 @@ export function SellTradeCTA() {
                 })}
               </div>
 
-              {/* Trust Stats Row */}
               <div className="flex flex-wrap items-center gap-x-6 gap-y-3 pt-1 border-t border-border/60">
                 {trustStats.map((stat) => {
                   const Icon = stat.icon;
                   return (
-                    <div
-                      key={stat.label}
-                      className="flex items-center gap-2.5 py-3"
-                    >
+                    <div key={stat.label} className="flex items-center gap-2.5 py-3">
                       <div className="w-8 h-8 rounded-md bg-gold/10 border border-gold/20 flex items-center justify-center text-gold shrink-0">
                         <Icon size={14} />
                       </div>
@@ -160,15 +154,16 @@ export function SellTradeCTA() {
               </div>
             </div>
 
-            {/* ----------------------------------------------------------- */}
-            {/* RIGHT — CTA Panel                                           */}
-            {/* ----------------------------------------------------------- */}
+            {/* RIGHT — CTA Panel */}
             <div className="lg:col-span-5">
               <div className="relative p-6 sm:p-7 rounded-2xl bg-obsidian border border-active-border overflow-hidden">
-                <div className="pointer-events-none absolute -top-16 -right-16 w-40 h-40 bg-gold/10 rounded-full blur-3xl" />
+                <div
+                  aria-hidden="true"
+                  className="pointer-events-none absolute -top-16 -right-16 rounded-full bg-gold/10 blur-3xl"
+                  style={{ width: 160, height: 160 }}
+                />
 
                 <div className="relative z-10 space-y-5">
-                  {/* Icon header */}
                   <div className="flex items-center gap-3">
                     <div className="w-12 h-12 rounded-xl bg-gold/10 border border-gold/20 flex items-center justify-center text-gold">
                       <Car size={22} />
@@ -190,25 +185,18 @@ export function SellTradeCTA() {
                       'Matched to verified buyers only',
                       'Full control over price & visibility',
                     ].map((item) => (
-                      <li
-                        key={item}
-                        className="flex items-start gap-2.5 text-xs font-sans text-secondary"
-                      >
-                        <ShieldCheck
-                          size={14}
-                          className="text-gold shrink-0 mt-0.5"
-                        />
+                      <li key={item} className="flex items-start gap-2.5 text-xs font-sans text-secondary">
+                        <ShieldCheck size={14} className="text-gold shrink-0 mt-0.5" />
                         <span>{item}</span>
                       </li>
                     ))}
                   </ul>
 
-                  {/* Actions */}
                   <div className="flex flex-col gap-2.5 pt-1">
-                    <Link href="/sell-trade" className="w-full">
+                    <Link href="/sell-trade" className="w-full cursor-pointer">
                       <button
                         type="button"
-                        className="btn-primary w-full text-xs uppercase tracking-widest font-semibold py-3.5 px-5 flex items-center justify-center gap-2 group"
+                        className="btn-primary w-full text-xs uppercase tracking-widest font-semibold py-3.5 px-5 flex items-center justify-center gap-2 group cursor-pointer"
                       >
                         <span>List Your Vehicle</span>
                         <ArrowRight
@@ -218,10 +206,10 @@ export function SellTradeCTA() {
                       </button>
                     </Link>
 
-                    <Link href="/sell-trade/valuation" className="w-full">
+                    <Link href="/sell-trade" className="w-full cursor-pointer">
                       <button
                         type="button"
-                        className="btn-secondary w-full text-xs uppercase tracking-widest font-medium py-3.5 px-5 flex items-center justify-center gap-2 group"
+                        className="btn-secondary w-full text-xs uppercase tracking-widest font-medium py-3.5 px-5 flex items-center justify-center gap-2 group cursor-pointer"
                       >
                         <TrendingUp size={15} className="text-gold" />
                         <span>Get Instant Valuation</span>
@@ -233,7 +221,7 @@ export function SellTradeCTA() {
                     No listing fees to start. Dealer partners can also apply for{' '}
                     <Link
                       href="/dealer/register"
-                      className="text-gold hover:text-gold-hover gold-underline"
+                      className="text-gold hover:text-gold-hover gold-underline cursor-pointer"
                     >
                       verified dealer access
                     </Link>

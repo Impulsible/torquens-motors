@@ -3,30 +3,30 @@
 import React, { useState, useEffect, useRef } from 'react';
 import Link from 'next/link';
 import Image from 'next/image';
-import { 
-  ArrowRight, 
-  Play, 
-  ShieldCheck, 
-  Sparkles, 
-  Award, 
-  Globe2, 
-  KeyRound
+import {
+  ArrowRight,
+  Play,
+  ShieldCheck,
+  Sparkles,
+  Award,
+  Globe2,
+  KeyRound,
+  X as CloseIcon,
 } from 'lucide-react';
 
 import { Button } from '@/components/ui/Button';
 import { Badge } from '@/components/ui/Badge';
-
-/* -------------------------------------------------------------------------- */
-/*                               HERO SECTION                                 */
-/* -------------------------------------------------------------------------- */
 
 export function HeroSection() {
   const heroRef = useRef<HTMLDivElement>(null);
   const imageRef = useRef<HTMLDivElement>(null);
   const [isPlayingReel, setIsPlayingReel] = useState(false);
 
-  // 60FPS Hardware-Accelerated Parallax Cursor Tracking
   useEffect(() => {
+    if (typeof window === 'undefined') return;
+    const mq = window.matchMedia('(prefers-reduced-motion: reduce)');
+    if (mq.matches) return;
+
     let animationFrameId: number;
 
     const handleMouseMove = (e: MouseEvent) => {
@@ -44,37 +44,39 @@ export function HeroSection() {
     };
 
     const hero = heroRef.current;
-    if (hero) {
-      hero.addEventListener('mousemove', handleMouseMove);
-    }
+    hero?.addEventListener('mousemove', handleMouseMove);
 
     return () => {
-      if (hero) {
-        hero.removeEventListener('mousemove', handleMouseMove);
-      }
+      hero?.removeEventListener('mousemove', handleMouseMove);
       cancelAnimationFrame(animationFrameId);
     };
   }, []);
+
+  useEffect(() => {
+    if (isPlayingReel) {
+      document.body.style.overflow = 'hidden';
+    } else {
+      document.body.style.overflow = '';
+    }
+    return () => {
+      document.body.style.overflow = '';
+    };
+  }, [isPlayingReel]);
 
   return (
     <section
       ref={heroRef}
       className="relative min-h-[92vh] lg:min-h-screen flex items-center overflow-hidden bg-obsidian pt-20 pb-12 select-none"
     >
-      {/* ───────────────────────────────────────────────────────────── */}
-      {/* 1. BACKGROUND ATMOSPHERE & CINEMATIC LAYERS                   */}
-      {/* ───────────────────────────────────────────────────────────── */}
-      
-      {/* Checkerboard Pattern Grid */}
+      {/* Background */}
       <div className="absolute inset-0 bg-checkerboard opacity-20 pointer-events-none" />
 
-      {/* Radial Gold Spotlight Glow */}
       <div
         aria-hidden="true"
-        className="pointer-events-none absolute top-1/3 left-1/4 -translate-x-1/2 -translate-y-1/2 w-175 h-125 bg-radial-hero opacity-80 blur-3xl"
+        className="pointer-events-none absolute top-1/3 left-1/4 -translate-x-1/2 -translate-y-1/2 bg-radial-hero opacity-80 blur-3xl"
+        style={{ width: 700, height: 500 }}
       />
 
-      {/* Hero Photography Container (with Parallax Engine) */}
       <div className="absolute inset-0 overflow-hidden pointer-events-none">
         <div
           ref={imageRef}
@@ -92,24 +94,17 @@ export function HeroSection() {
         </div>
       </div>
 
-      {/* Directional Vignette Gradient Masks */}
       <div className="absolute inset-0 bg-linear-to-r from-obsidian via-obsidian/85 to-transparent z-10 pointer-events-none" />
       <div className="absolute inset-0 bg-linear-to-t from-obsidian via-obsidian/30 to-transparent z-10 pointer-events-none" />
       <div className="absolute inset-0 bg-linear-to-b from-obsidian/80 via-transparent to-obsidian z-10 pointer-events-none" />
 
-      {/* Specular Top Hairline Accent */}
       <div
         aria-hidden="true"
         className="pointer-events-none absolute inset-x-0 top-0 h-px bg-linear-to-r from-transparent via-white/15 to-transparent z-20"
       />
 
-      {/* ───────────────────────────────────────────────────────────── */}
-      {/* 2. HERO CONTENT & TYPOGRAPHY HIERARCHY                         */}
-      {/* ───────────────────────────────────────────────────────────── */}
       <div className="container-torquens relative z-20 my-auto">
         <div className="max-w-3xl space-y-6">
-          
-          {/* Eyebrow Provenance Badge */}
           <div className="inline-flex items-center gap-2">
             <Badge
               variant="gold"
@@ -126,20 +121,17 @@ export function HeroSection() {
             </span>
           </div>
 
-          {/* Main Display Headline */}
           <h1 className="font-serif text-5xl sm:text-6xl md:text-7xl lg:text-8xl font-normal leading-[0.98] tracking-tight text-primary">
             ENGINEERED <br />
             <span className="text-gold-gradient font-serif">TO MOVE.</span>
           </h1>
 
-          {/* Subtitle Narrative */}
           <p className="font-sans text-secondary text-sm sm:text-base md:text-lg leading-relaxed max-w-xl font-normal">
             An elite digital showroom for rare allocations, iconic marques, and verified motorcars. Selected for those who measure value in acceleration and heritage.
           </p>
 
-          {/* CTA Action Bar */}
           <div className="pt-2 flex flex-wrap items-center gap-4">
-            <Link href="/vehicles">
+            <Link href="/vehicles" className="cursor-pointer">
               <Button
                 variant="primary"
                 size="lg"
@@ -150,7 +142,7 @@ export function HeroSection() {
               </Button>
             </Link>
 
-            <Link href="/concierge/sourcing">
+            <Link href="/dashboard/enquiries" className="cursor-pointer">
               <Button
                 variant="glass"
                 size="lg"
@@ -160,12 +152,11 @@ export function HeroSection() {
               </Button>
             </Link>
 
-            {/* Video Showcase Modal Trigger */}
             <button
               type="button"
               onClick={() => setIsPlayingReel(true)}
               aria-label="Play brand showcase film"
-              className="group flex items-center gap-3 px-3 py-2 rounded-full bg-charcoal/40 backdrop-blur-md border border-white/8 hover:border-gold/40 transition-all duration-300 ml-0 sm:ml-2"
+              className="group flex items-center gap-3 px-3 py-2 rounded-full bg-charcoal/40 backdrop-blur-md border border-white/10 hover:border-gold/40 transition-all duration-300 ml-0 sm:ml-2 cursor-pointer"
             >
               <span className="relative flex h-8 w-8 items-center justify-center rounded-full bg-gold text-obsidian shadow-goldGlowSm transition-transform group-hover:scale-110">
                 <Play className="h-3.5 w-3.5 fill-current ml-0.5" />
@@ -176,11 +167,8 @@ export function HeroSection() {
             </button>
           </div>
 
-          {/* ───────────────────────────────────────────────────────────── */}
-          {/* 3. SHOWROOM TELEMETRY METRICS                                 */}
-          {/* ───────────────────────────────────────────────────────────── */}
+          {/* Metrics */}
           <div className="pt-8 sm:pt-12 grid grid-cols-3 gap-4 border-t border-border/60 max-w-xl">
-            {/* Metric 1 */}
             <div className="space-y-1">
               <div className="flex items-center gap-1.5 text-primary">
                 <Sparkles className="h-4 w-4 text-gold shrink-0" />
@@ -193,7 +181,6 @@ export function HeroSection() {
               </p>
             </div>
 
-            {/* Metric 2 */}
             <div className="space-y-1 border-x border-border/60 px-3 sm:px-4">
               <div className="flex items-center gap-1.5 text-primary">
                 <Award className="h-4 w-4 text-gold shrink-0" />
@@ -206,7 +193,6 @@ export function HeroSection() {
               </p>
             </div>
 
-            {/* Metric 3 */}
             <div className="space-y-1 pl-2">
               <div className="flex items-center gap-1.5 text-primary">
                 <Globe2 className="h-4 w-4 text-emerald shrink-0" />
@@ -219,13 +205,10 @@ export function HeroSection() {
               </p>
             </div>
           </div>
-
         </div>
       </div>
 
-      {/* ───────────────────────────────────────────────────────────── */}
-      {/* 4. ELEGANT SCROLL INDICATOR                                   */}
-      {/* ───────────────────────────────────────────────────────────── */}
+      {/* Scroll indicator */}
       <div className="absolute bottom-6 left-1/2 -translate-x-1/2 z-20 flex flex-col items-center gap-2 text-muted pointer-events-none select-none">
         <span className="text-[10px] font-mono uppercase tracking-[0.25em] text-secondary/80">
           Scroll
@@ -235,24 +218,25 @@ export function HeroSection() {
         </div>
       </div>
 
-      {/* Video Reel Modal Lightbox */}
+      {/* Reel modal */}
       {isPlayingReel && (
         <div
           role="dialog"
           aria-modal="true"
-          className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-obsidian/90 backdrop-blur-2xl animate-fade-in"
+          className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-obsidian/90 backdrop-blur-2xl animate-fade-in cursor-pointer"
           onClick={() => setIsPlayingReel(false)}
         >
           <div
-            className="relative aspect-video w-full max-w-4xl rounded-xl bg-graphite border border-border shadow-dropdown overflow-hidden"
+            className="relative aspect-video w-full max-w-4xl rounded-xl bg-graphite border border-border shadow-dropdown overflow-hidden cursor-default"
             onClick={(e) => e.stopPropagation()}
           >
             <button
               type="button"
               onClick={() => setIsPlayingReel(false)}
-              className="absolute top-4 right-4 z-10 rounded-full bg-obsidian/80 p-2 text-white hover:text-gold transition-colors"
+              aria-label="Close video"
+              className="absolute top-4 right-4 z-10 rounded-full bg-obsidian/80 p-2 text-white hover:text-gold transition-colors cursor-pointer"
             >
-              ✕
+              <CloseIcon className="h-4 w-4" />
             </button>
             <iframe
               className="h-full w-full"

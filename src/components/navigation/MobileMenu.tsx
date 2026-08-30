@@ -1,4 +1,3 @@
-/* eslint-disable @typescript-eslint/no-unused-vars */
 'use client';
 
 import React, { useEffect, useRef } from 'react';
@@ -7,19 +6,10 @@ import Image from 'next/image';
 import { usePathname } from 'next/navigation';
 import {
   X,
-  Car,
-  Home,
-  Heart,
-  User,
   LogOut,
-  MessageSquare,
-  Package,
-  Store,
-  ShieldCheck,
-  BarChart3,
-  Sparkles,
-  Crown,
   Building2,
+  ShieldCheck,
+  Crown,
   PhoneCall,
   ChevronRight,
   KeyRound,
@@ -31,10 +21,6 @@ import { Badge, type BadgeVariant } from '@/components/ui/Badge';
 import { cn } from '@/utils/cn';
 import { mainNavItems, userMenuItems, dealerMenuItems, adminMenuItems } from '@/data/navigation';
 
-/* -------------------------------------------------------------------------- */
-/*                                    TYPES                                   */
-/* -------------------------------------------------------------------------- */
-
 export type UserRole = 'CUSTOMER' | 'DEALER' | 'ADMIN' | 'CONCIERGE';
 
 export interface UserProfile {
@@ -42,7 +28,7 @@ export interface UserProfile {
   email: string;
   role: UserRole | string;
   avatar?: string | null;
-  tier?: string; // e.g. "Centurion Member", "Private Client"
+  tier?: string;
 }
 
 export interface MobileMenuProps {
@@ -53,10 +39,6 @@ export interface MobileMenuProps {
   onSignOut?: () => void | Promise<void>;
   className?: string;
 }
-
-/* -------------------------------------------------------------------------- */
-/*                              MOBILE MENU ROOT                              */
-/* -------------------------------------------------------------------------- */
 
 export function MobileMenu({
   isOpen,
@@ -69,7 +51,6 @@ export function MobileMenu({
   const pathname = usePathname();
   const drawerRef = useRef<HTMLDivElement>(null);
 
-  // 1. Lock Body Scroll & Keyboard Escape Listener
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
       if (e.key === 'Escape') onClose();
@@ -88,7 +69,6 @@ export function MobileMenu({
 
   if (!isOpen) return null;
 
-  // 2. Role Configuration & Navigation Mapping
   const roleConfig: Record<
     string,
     { label: string; variant: BadgeVariant; icon: React.ReactNode; dashboardHref: string }
@@ -123,7 +103,6 @@ export function MobileMenu({
 
   const accountMenuItems = getAccountMenuItems();
 
-  // 3. Monogram Initials Fallback
   const initials = user?.name
     ? user.name
         .split(' ')
@@ -143,15 +122,11 @@ export function MobileMenu({
         if (e.target === e.currentTarget) onClose();
       }}
     >
-      {/* Ambient Gold Radial Flare */}
       <div
         aria-hidden="true"
         className="pointer-events-none absolute top-10 right-0 w-72 h-72 bg-gold/10 blur-[100px] rounded-full"
       />
 
-      {/* ───────────────────────────────────────────────────────────── */}
-      {/* DRAWER CHASSIS                                                */}
-      {/* ───────────────────────────────────────────────────────────── */}
       <div
         ref={drawerRef}
         className={cn(
@@ -160,20 +135,15 @@ export function MobileMenu({
           className
         )}
       >
-        {/* Specular Top Edge Light Refraction */}
         <div
           aria-hidden="true"
           className="pointer-events-none absolute inset-x-0 top-0 h-px bg-linear-to-r from-transparent via-white/15 to-transparent z-20"
         />
 
-        {/* ───────────────────────────────────────────────────────────── */}
-        {/* 1. HEADER (Brand Crest & Dismiss Button)                      */}
-        {/* ───────────────────────────────────────────────────────────── */}
+        {/* HEADER */}
         <div className="flex items-center justify-between p-5 border-b border-border/60 bg-charcoal/30">
-          <Link href="/" onClick={onClose} className="flex items-center gap-1.5">
-            <span className="font-serif text-xl tracking-tight text-primary">
-              TORQUENS
-            </span>
+          <Link href="/" onClick={onClose} className="flex items-center gap-1.5 cursor-pointer">
+            <span className="font-serif text-xl tracking-tight text-primary">TORQUENS</span>
             <span className="font-sans text-xs uppercase tracking-widest font-semibold text-gold">
               MOTORS
             </span>
@@ -183,21 +153,17 @@ export function MobileMenu({
             type="button"
             onClick={onClose}
             aria-label="Close navigation menu"
-            className="flex h-9 w-9 items-center justify-center rounded-md border border-border/80 text-muted hover:text-primary hover:border-active-border hover:bg-charcoal transition-colors"
+            className="flex h-9 w-9 items-center justify-center rounded-md border border-border/80 text-muted hover:text-primary hover:border-active-border hover:bg-charcoal transition-colors cursor-pointer"
           >
             <X className="h-4 w-4" />
           </button>
         </div>
 
-        {/* ───────────────────────────────────────────────────────────── */}
-        {/* 2. SCROLLABLE NAVIGATION BODY                                 */}
-        {/* ───────────────────────────────────────────────────────────── */}
+        {/* SCROLLABLE BODY */}
         <nav className="flex-1 overflow-y-auto p-5 space-y-6">
-          {/* USER PROFILE DOSSIER (If Authenticated) */}
           {isAuthenticated && user && (
             <div className="p-3.5 rounded-lg bg-inset border border-border/70 shadow-inner">
               <div className="flex items-center gap-3">
-                {/* Avatar with Metallic Ring */}
                 <div className="relative h-10 w-10 rounded-full overflow-hidden border border-gold/40 p-0.5 bg-obsidian shrink-0 flex items-center justify-center">
                   {user.avatar ? (
                     <Image
@@ -211,7 +177,6 @@ export function MobileMenu({
                   )}
                 </div>
 
-                {/* Name & Email */}
                 <div className="min-w-0 flex-1">
                   <div className="flex items-center justify-between gap-1">
                     <h4 className="font-serif text-sm font-normal text-primary truncate">
@@ -221,9 +186,7 @@ export function MobileMenu({
                       {activeRole.label}
                     </Badge>
                   </div>
-                  <p className="text-xs text-muted font-mono truncate mt-0.5">
-                    {user.email}
-                  </p>
+                  <p className="text-xs text-muted font-mono truncate mt-0.5">{user.email}</p>
                 </div>
               </div>
             </div>
@@ -243,7 +206,7 @@ export function MobileMenu({
                       href={item.href}
                       onClick={onClose}
                       className={cn(
-                        'group flex items-center justify-between px-3.5 py-2.5 rounded-md text-sm font-sans font-medium transition-all duration-200',
+                        'group flex items-center justify-between px-3.5 py-2.5 rounded-md text-sm font-sans font-medium transition-all duration-200 cursor-pointer',
                         isActive
                           ? 'bg-gold/10 text-gold border-l-2 border-gold font-semibold shadow-sm'
                           : 'text-secondary hover:text-primary hover:bg-charcoal/70'
@@ -276,7 +239,7 @@ export function MobileMenu({
             </ul>
           </div>
 
-          {/* AUTHENTICATED ACCOUNT & PORTAL ACTIONS */}
+          {/* VAULT ACCOUNT NAVIGATION */}
           {isAuthenticated && (
             <div className="pt-4 border-t border-border/60">
               <span className="block text-[10px] uppercase tracking-widest font-semibold text-muted font-sans mb-2.5 px-2">
@@ -291,7 +254,7 @@ export function MobileMenu({
                         href={item.href}
                         onClick={onClose}
                         className={cn(
-                          'group flex items-center justify-between px-3.5 py-2.5 rounded-md text-sm font-sans font-medium transition-all duration-200',
+                          'group flex items-center justify-between px-3.5 py-2.5 rounded-md text-sm font-sans font-medium transition-all duration-200 cursor-pointer',
                           isActive
                             ? 'bg-gold/10 text-gold border-l-2 border-gold font-semibold'
                             : 'text-secondary hover:text-primary hover:bg-charcoal/70'
@@ -322,7 +285,6 @@ export function MobileMenu({
                   );
                 })}
 
-                {/* Sign Out Button */}
                 <li className="pt-2">
                   <button
                     type="button"
@@ -330,7 +292,7 @@ export function MobileMenu({
                       onClose();
                       if (onSignOut) await onSignOut();
                     }}
-                    className="flex items-center justify-between w-full px-3.5 py-2.5 rounded-md text-sm font-sans text-red-400 hover:text-red-300 hover:bg-red-500/10 transition-colors"
+                    className="flex items-center justify-between w-full px-3.5 py-2.5 rounded-md text-sm font-sans text-red-400 hover:text-red-300 hover:bg-red-500/10 transition-colors cursor-pointer"
                   >
                     <div className="flex items-center gap-3">
                       <LogOut className="h-4 w-4" />
@@ -342,7 +304,7 @@ export function MobileMenu({
             </div>
           )}
 
-          {/* DIRECT CONCIERGE ACCESS CARD */}
+          {/* CONCIERGE CARD */}
           <div className="p-3.5 rounded-lg bg-charcoal/40 border border-border/80 flex items-center justify-between">
             <div className="flex items-center gap-3">
               <div className="flex h-8 w-8 items-center justify-center rounded-md bg-gold/10 border border-gold/20 text-gold">
@@ -353,28 +315,27 @@ export function MobileMenu({
                   VIP Concierge Liaison
                 </span>
                 <span className="text-[11px] text-secondary font-sans">
-                  Direct Line: +44 20 7946 0991
+                  Direct Line: +234 800 TORQUENS
                 </span>
               </div>
             </div>
             <a
-              href="tel:+442079460991"
-              className="text-gold hover:text-gold-hover p-1"
+              href="tel:+234800TORQUENS"
+              className="text-gold hover:text-gold-hover p-1 cursor-pointer"
               aria-label="Call concierge"
             >
               <ArrowUpRight className="h-4 w-4" />
             </a>
           </div>
 
-          {/* UNAUTHENTICATED ACTION BUTTONS */}
           {!isAuthenticated && (
             <div className="pt-4 border-t border-border/60 space-y-3">
-              <Link href="/auth/login" onClick={onClose} className="block">
+              <Link href="/auth/login" onClick={onClose} className="block cursor-pointer">
                 <Button variant="secondary" size="md" fullWidth>
                   Sign In to Vault
                 </Button>
               </Link>
-              <Link href="/auth/register" onClick={onClose} className="block">
+              <Link href="/auth/register" onClick={onClose} className="block cursor-pointer">
                 <Button
                   variant="gold"
                   size="md"
@@ -388,9 +349,6 @@ export function MobileMenu({
           )}
         </nav>
 
-        {/* ───────────────────────────────────────────────────────────── */}
-        {/* 3. FOOTER (Provenance & SSL Security Tag)                    */}
-        {/* ───────────────────────────────────────────────────────────── */}
         <div className="p-4 border-t border-border/60 bg-charcoal/30 flex items-center justify-between text-[11px] font-sans text-muted">
           <span>TORQUENS MOTORS © {new Date().getFullYear()}</span>
           <div className="flex items-center gap-1 text-secondary">

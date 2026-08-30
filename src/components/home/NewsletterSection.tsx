@@ -1,11 +1,10 @@
-/* eslint-disable @typescript-eslint/no-unused-vars */
+
 'use client';
 
-import { useState } from 'react';
+import React, { useState } from 'react';
 import Link from 'next/link';
 import {
   Send,
-  Check,
   CheckCircle2,
   Sparkles,
   ArrowRight,
@@ -14,7 +13,6 @@ import {
   Lock,
   Loader2,
 } from 'lucide-react';
-import { Button } from '@/components/ui/Button';
 import { cn } from '@/utils/cn';
 
 const benefits = [
@@ -50,8 +48,8 @@ export function NewsletterSection() {
     setLoading(true);
 
     try {
-      // Simulate API call — replace with real endpoint later
-      await new Promise((resolve) => setTimeout(resolve, 1400));
+      // Simulate API registration
+      await new Promise((resolve) => setTimeout(resolve, 1200));
       setSubmitted(true);
       setEmail('');
     } catch {
@@ -79,39 +77,36 @@ export function NewsletterSection() {
       </div>
 
       {/* Ambient Glow */}
-      <div className="pointer-events-none absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-175 h-100 bg-gold/5 blur-[120px] rounded-full" />
+      <div
+        aria-hidden="true"
+        className="pointer-events-none absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 rounded-full bg-gold/5 blur-[120px]"
+        style={{ width: 700, height: 400 }}
+      />
 
       <div className="container-torquens relative z-10">
         <div className="max-w-3xl mx-auto">
-          {/* ----------------------------------------------------------------- */}
-          {/* HEADER                                                            */}
-          {/* ----------------------------------------------------------------- */}
+          {/* HEADER */}
           <div className="text-center space-y-3 mb-10">
             <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-gold/10 border border-gold/20 text-gold text-[11px] font-sans font-semibold uppercase tracking-widest">
               <Sparkles size={12} />
               Private Concierge Registry
             </div>
 
-            <h2 className="section-title">
-              Receive Off-Market Allocations
-            </h2>
+            <h2 className="section-title">Receive Off-Market Allocations</h2>
 
             <p className="text-secondary text-sm md:text-base font-sans leading-relaxed max-w-xl mx-auto">
-              Join collectors and verified buyers who receive private notifications
-              for unlisted inventory, rare drops, and exclusive price adjustments.
+              Join collectors and verified buyers who receive private notifications for unlisted inventory, rare drops, and exclusive price adjustments.
             </p>
           </div>
 
-          {/* ----------------------------------------------------------------- */}
-          {/* BENEFIT CHIPS                                                     */}
-          {/* ----------------------------------------------------------------- */}
+          {/* BENEFIT CHIPS */}
           <div className="flex flex-wrap items-center justify-center gap-2.5 mb-8">
             {benefits.map((item) => {
               const Icon = item.icon;
               return (
                 <span
                   key={item.label}
-                  className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-obsidian/60 border border-border text-[11px] font-sans font-medium text-secondary"
+                  className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-obsidian/60 border border-border text-[11px] font-sans font-medium text-secondary select-none"
                 >
                   <Icon size={12} className="text-gold" />
                   {item.label}
@@ -120,18 +115,18 @@ export function NewsletterSection() {
             })}
           </div>
 
-          {/* ----------------------------------------------------------------- */}
-          {/* FORM / SUCCESS PANEL                                              */}
-          {/* ----------------------------------------------------------------- */}
+          {/* FORM / SUCCESS PANEL */}
           <div className="relative p-6 sm:p-8 rounded-2xl bg-obsidian border border-active-border shadow-card overflow-hidden">
-            {/* Top gold stroke */}
             <div className="absolute top-0 left-0 right-0 h-0.5 bg-linear-to-r from-transparent via-gold to-transparent" />
-            <div className="pointer-events-none absolute -top-24 -right-24 w-56 h-56 bg-gold/5 rounded-full blur-3xl" />
+            <div
+              aria-hidden="true"
+              className="pointer-events-none absolute -top-24 -right-24 rounded-full bg-gold/5 blur-3xl"
+              style={{ width: 224, height: 224 }}
+            />
 
             {!submitted ? (
-              <form onSubmit={handleSubmit} className="relative z-10 space-y-4">
+              <form onSubmit={handleSubmit} className="relative z-10 space-y-4" noValidate>
                 <div className="flex flex-col sm:flex-row gap-3">
-                  {/* Email Input */}
                   <div className="relative flex-1">
                     <input
                       type="email"
@@ -156,14 +151,13 @@ export function NewsletterSection() {
                     />
                   </div>
 
-                  {/* Submit */}
                   <button
                     type="submit"
                     disabled={loading || !email}
                     className={cn(
-                      'btn-primary text-xs uppercase tracking-widest font-semibold',
+                      'btn-primary text-xs uppercase tracking-widest font-semibold cursor-pointer',
                       'py-3.5 px-6 shrink-0 flex items-center justify-center gap-2',
-                      'disabled:opacity-50 disabled:pointer-events-none'
+                      'disabled:opacity-50 disabled:cursor-not-allowed'
                     )}
                   >
                     {loading ? (
@@ -180,14 +174,12 @@ export function NewsletterSection() {
                   </button>
                 </div>
 
-                {/* Inline Error */}
                 {error && (
-                  <p className="text-xs font-sans text-red-400 text-left sm:text-center">
+                  <p className="text-xs font-sans text-red-400 text-left sm:text-center animate-fade-in">
                     {error}
                   </p>
                 )}
 
-                {/* Trust Microcopy */}
                 <div className="flex flex-col sm:flex-row items-center justify-between gap-2 pt-1">
                   <p className="text-[11px] text-muted font-sans">
                     Join 2,000+ collectors. No spam — unsubscribe anytime.
@@ -199,9 +191,8 @@ export function NewsletterSection() {
                 </div>
               </form>
             ) : (
-              /* Success State */
-              <div className="relative z-10 text-center py-4 space-y-4 animate-in fade-in duration-300">
-                <div className="mx-auto w-14 h-14 rounded-2xl bg-emerald/10 border border-emerald/30 flex items-center justify-center text-emerald">
+              <div className="relative z-10 text-center py-4 space-y-4 animate-fade-in">
+                <div className="mx-auto w-14 h-14 rounded-2xl bg-emerald/10 border border-emerald/30 flex items-center justify-center text-emerald shadow-glow">
                   <CheckCircle2 size={28} />
                 </div>
 
@@ -210,15 +201,14 @@ export function NewsletterSection() {
                     You&apos;re on the Private Registry
                   </h3>
                   <p className="text-sm text-secondary font-sans max-w-md mx-auto leading-relaxed">
-                    Watch your inbox for off-market allocations, rare drops, and
-                    member-only price alerts.
+                    Watch your inbox for off-market allocations, rare drops, and member-only price alerts.
                   </p>
                 </div>
 
                 <div className="flex flex-col sm:flex-row items-center justify-center gap-3 pt-2">
                   <Link
                     href="/vehicles"
-                    className="btn-primary text-xs uppercase tracking-widest font-semibold py-3 px-5 flex items-center gap-2 group"
+                    className="btn-primary text-xs uppercase tracking-widest font-semibold py-3 px-5 flex items-center gap-2 group cursor-pointer"
                   >
                     <span>Browse Inventory</span>
                     <ArrowRight
@@ -230,7 +220,7 @@ export function NewsletterSection() {
                   <button
                     type="button"
                     onClick={handleReset}
-                    className="btn-secondary text-xs uppercase tracking-widest font-medium py-3 px-5"
+                    className="btn-secondary text-xs uppercase tracking-widest font-medium py-3 px-5 cursor-pointer"
                   >
                     Add Another Email
                   </button>
@@ -239,14 +229,11 @@ export function NewsletterSection() {
             )}
           </div>
 
-          {/* ----------------------------------------------------------------- */}
-          {/* SECONDARY CONCIERGE LINK                                          */}
-          {/* ----------------------------------------------------------------- */}
           <p className="text-center text-xs text-muted font-sans mt-6">
             Prefer a human specialist?{' '}
             <Link
               href="/contact"
-              className="text-gold hover:text-gold-hover gold-underline font-medium"
+              className="text-gold hover:text-gold-hover gold-underline font-medium cursor-pointer"
             >
               Speak with TORQUENS Concierge
             </Link>

@@ -14,7 +14,6 @@ import {
   ArrowRight,
   CornerDownLeft,
   Sparkles,
-  Trash2,
   Gauge,
   Zap,
   Car,
@@ -26,10 +25,6 @@ import { Button } from '@/components/ui/Button';
 import { Badge } from '@/components/ui/Badge';
 import { Price } from '@/components/ui/Price';
 import { cn } from '@/utils/cn';
-
-/* -------------------------------------------------------------------------- */
-/*                                    TYPES                                   */
-/* -------------------------------------------------------------------------- */
 
 export interface SearchOverlayProps {
   isOpen: boolean;
@@ -51,10 +46,6 @@ export interface QuickSearchResult {
   status: 'AVAILABLE' | 'ALLOCATION' | 'RESERVED';
 }
 
-/* -------------------------------------------------------------------------- */
-/*                              CURATED METADATA                              */
-/* -------------------------------------------------------------------------- */
-
 const POPULAR_SEARCHES = [
   'Porsche 911 GT3 RS',
   'Ferrari 812 GTS',
@@ -73,7 +64,6 @@ const CURATED_MARQUES = [
   { name: 'Lamborghini', count: 8 },
 ];
 
-// Sample live instant match mock (replace with API/fetch call in production)
 const MOCK_INSTANT_MATCHES: QuickSearchResult[] = [
   {
     id: '1',
@@ -116,10 +106,6 @@ const MOCK_INSTANT_MATCHES: QuickSearchResult[] = [
   },
 ];
 
-/* -------------------------------------------------------------------------- */
-/*                            SEARCH OVERLAY ROOT                             */
-/* -------------------------------------------------------------------------- */
-
 export function SearchOverlay({ isOpen, onClose, onSearchSubmit }: SearchOverlayProps) {
   const router = useRouter();
   const [query, setQuery] = useState('');
@@ -130,7 +116,6 @@ export function SearchOverlay({ isOpen, onClose, onSearchSubmit }: SearchOverlay
   const inputRef = useRef<HTMLInputElement>(null);
   const containerRef = useRef<HTMLDivElement>(null);
 
-  // 1. Load Recent Searches from LocalStorage
   useEffect(() => {
     try {
       const stored = localStorage.getItem('torquens_recent_searches');
@@ -144,7 +129,6 @@ export function SearchOverlay({ isOpen, onClose, onSearchSubmit }: SearchOverlay
     }
   }, []);
 
-  // 2. Save Recent Search
   const saveSearchTerm = useCallback((term: string) => {
     const trimmed = term.trim();
     if (!trimmed) return;
@@ -155,13 +139,12 @@ export function SearchOverlay({ isOpen, onClose, onSearchSubmit }: SearchOverlay
       try {
         localStorage.setItem('torquens_recent_searches', JSON.stringify(updated));
       } catch {
-        // Storage fail silent
+        // Silent catch
       }
       return updated;
     });
   }, []);
 
-  // 3. Clear Specific / All Searches
   const removeRecentSearch = (e: React.MouseEvent, termToRemove: string) => {
     e.stopPropagation();
     setRecentSearches((prev) => {
@@ -176,7 +159,6 @@ export function SearchOverlay({ isOpen, onClose, onSearchSubmit }: SearchOverlay
     localStorage.removeItem('torquens_recent_searches');
   };
 
-  // 4. Modal Focus & Escape Key Management
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
       if (e.key === 'Escape') onClose();
@@ -194,7 +176,6 @@ export function SearchOverlay({ isOpen, onClose, onSearchSubmit }: SearchOverlay
     }
   }, [isOpen, onClose]);
 
-  // 5. Query Filtering & Live Match Simulation
   useEffect(() => {
     if (!query.trim()) {
       setInstantResults([]);
@@ -216,7 +197,6 @@ export function SearchOverlay({ isOpen, onClose, onSearchSubmit }: SearchOverlay
     return () => clearTimeout(debounceTimer);
   }, [query]);
 
-  // 6. Navigation Execution
   const executeSearch = (searchTerm: string) => {
     const finalQuery = searchTerm.trim();
     if (!finalQuery) return;
@@ -244,22 +224,16 @@ export function SearchOverlay({ isOpen, onClose, onSearchSubmit }: SearchOverlay
         if (e.target === e.currentTarget) onClose();
       }}
     >
-      {/* ───────────────────────────────────────────────────────────── */}
-      {/* AMBIENT LUXURY RADIAL ILLUMINATION                           */}
-      {/* ───────────────────────────────────────────────────────────── */}
       <div
         aria-hidden="true"
-        className="pointer-events-none fixed top-0 left-1/2 -translate-x-1/2 w-200 h-112.5 bg-gold/10 blur-[130px] rounded-full"
+        className="pointer-events-none fixed top-0 left-1/2 -translate-x-1/2 bg-gold/10 blur-[130px] rounded-full"
+        style={{ width: 800, height: 450 }}
       />
 
-      {/* ───────────────────────────────────────────────────────────── */}
-      {/* SEARCH COMMAND CHASSIS                                        */}
-      {/* ───────────────────────────────────────────────────────────── */}
       <div
         ref={containerRef}
         className="relative z-10 w-full max-w-3xl px-4 pt-12 pb-20 sm:pt-20"
       >
-        {/* Top Control Bar with Close & Escape Hint */}
         <div className="flex items-center justify-between mb-4 px-1">
           <div className="flex items-center gap-2">
             <Badge variant="gold" size="sm" leftIcon={<Sparkles className="h-3 w-3" />}>
@@ -274,30 +248,24 @@ export function SearchOverlay({ isOpen, onClose, onSearchSubmit }: SearchOverlay
             type="button"
             onClick={onClose}
             aria-label="Close search overlay"
-            className="flex items-center gap-1.5 rounded-md px-2.5 py-1 text-xs font-mono text-muted hover:text-primary hover:bg-charcoal transition-colors border border-border/60"
+            className="flex items-center gap-1.5 rounded-md px-2.5 py-1 text-xs font-mono text-muted hover:text-primary hover:bg-charcoal transition-colors border border-border/60 cursor-pointer"
           >
             <span>ESC</span>
             <X className="h-3.5 w-3.5" />
           </button>
         </div>
 
-        {/* ───────────────────────────────────────────────────────────── */}
-        {/* MAIN SEARCH INPUT FRAME                                       */}
-        {/* ───────────────────────────────────────────────────────────── */}
-        <form onSubmit={handleSubmit} className="relative group">
+        <form onSubmit={handleSubmit} className="relative group" noValidate>
           <div className="relative flex items-center rounded-xl bg-graphite/95 border border-border shadow-card overflow-hidden transition-all duration-300 group-focus-within:border-gold/60 group-focus-within:shadow-[0_0_35px_-5px_rgba(197,160,89,0.25)]">
-            {/* Top Specular Hairline */}
             <div
               aria-hidden="true"
               className="pointer-events-none absolute inset-x-0 top-0 h-px bg-linear-to-r from-transparent via-white/15 to-transparent z-10"
             />
 
-            {/* Leading Search Icon */}
             <div className="pl-5 text-muted transition-colors group-focus-within:text-gold">
               <Search className="h-6 w-6" />
             </div>
 
-            {/* Input Field */}
             <input
               ref={inputRef}
               type="text"
@@ -307,7 +275,6 @@ export function SearchOverlay({ isOpen, onClose, onSearchSubmit }: SearchOverlay
               className="w-full bg-transparent py-4.5 pl-4 pr-24 text-base sm:text-lg font-sans text-primary placeholder:text-muted/60 focus:outline-none"
             />
 
-            {/* Right Action Stack (Clear + Submit Button) */}
             <div className="pr-3 flex items-center gap-2">
               {query && (
                 <button
@@ -317,7 +284,7 @@ export function SearchOverlay({ isOpen, onClose, onSearchSubmit }: SearchOverlay
                     inputRef.current?.focus();
                   }}
                   aria-label="Clear search input"
-                  className="rounded p-1 text-muted hover:text-primary hover:bg-charcoal transition-colors"
+                  className="rounded p-1 text-muted hover:text-primary hover:bg-charcoal transition-colors cursor-pointer"
                 >
                   <X className="h-4 w-4" />
                 </button>
@@ -329,7 +296,7 @@ export function SearchOverlay({ isOpen, onClose, onSearchSubmit }: SearchOverlay
                 size="sm"
                 isLoading={isSearching}
                 rightIcon={<CornerDownLeft className="h-3 w-3" />}
-                className="hidden sm:inline-flex h-9 text-xs uppercase tracking-wider font-semibold"
+                className="hidden sm:inline-flex h-9 text-xs uppercase tracking-wider font-semibold cursor-pointer"
               >
                 Search
               </Button>
@@ -337,11 +304,7 @@ export function SearchOverlay({ isOpen, onClose, onSearchSubmit }: SearchOverlay
           </div>
         </form>
 
-        {/* ───────────────────────────────────────────────────────────── */}
-        {/* RESULTS & DISCOVERY PANELS                                   */}
-        {/* ───────────────────────────────────────────────────────────── */}
         <div className="mt-8 space-y-8">
-          {/* STATE A: ACTIVE QUERY RESULTS PREVIEW */}
           {query.trim() ? (
             <div className="space-y-4 animate-slide-up">
               <div className="flex items-center justify-between px-1">
@@ -351,7 +314,7 @@ export function SearchOverlay({ isOpen, onClose, onSearchSubmit }: SearchOverlay
                 <button
                   type="button"
                   onClick={() => executeSearch(query)}
-                  className="text-xs text-gold hover:text-gold-hover font-sans flex items-center gap-1 font-medium transition-colors"
+                  className="text-xs text-gold hover:text-gold-hover font-sans flex items-center gap-1 font-medium transition-colors cursor-pointer"
                 >
                   <span>Explore all matching listings</span>
                   <ArrowRight className="h-3.5 w-3.5" />
@@ -365,10 +328,9 @@ export function SearchOverlay({ isOpen, onClose, onSearchSubmit }: SearchOverlay
                       key={car.id}
                       href={`/vehicles/${car.slug}`}
                       onClick={onClose}
-                      className="group flex items-center justify-between p-3 sm:p-3.5 rounded-lg bg-graphite/60 border border-border hover:border-gold/50 hover:bg-charcoal/70 transition-all duration-300"
+                      className="group flex items-center justify-between p-3 sm:p-3.5 rounded-lg bg-graphite/60 border border-border hover:border-gold/50 hover:bg-charcoal/70 transition-all duration-300 cursor-pointer"
                     >
                       <div className="flex items-center gap-4 min-w-0">
-                        {/* Thumbnail */}
                         <div className="relative h-14 w-20 sm:h-16 sm:w-24 rounded-md overflow-hidden bg-charcoal shrink-0 border border-white/5">
                           <Image
                             src={car.image}
@@ -378,7 +340,6 @@ export function SearchOverlay({ isOpen, onClose, onSearchSubmit }: SearchOverlay
                           />
                         </div>
 
-                        {/* Details */}
                         <div className="min-w-0">
                           <div className="flex items-center gap-2">
                             <span className="text-[10px] uppercase font-semibold tracking-wider text-gold font-sans">
@@ -408,7 +369,6 @@ export function SearchOverlay({ isOpen, onClose, onSearchSubmit }: SearchOverlay
                         </div>
                       </div>
 
-                      {/* Pricing & Arrow */}
                       <div className="flex items-center gap-3 shrink-0 pl-3">
                         <Price amount={car.price} currency={car.currency} size="md" variant="gold" />
                         <div className="h-8 w-8 rounded-full bg-charcoal flex items-center justify-center text-muted group-hover:text-obsidian group-hover:bg-gold transition-all duration-300">
@@ -431,9 +391,7 @@ export function SearchOverlay({ isOpen, onClose, onSearchSubmit }: SearchOverlay
               )}
             </div>
           ) : (
-            /* STATE B: EMPTY QUERY DISCOVERY (Marques, Trending & Recent) */
             <>
-              {/* 1. Curated Marques Shortcuts */}
               <div>
                 <span className="block text-xs uppercase tracking-wider font-semibold text-secondary font-sans mb-3 px-1">
                   Marques & Heritage
@@ -444,7 +402,7 @@ export function SearchOverlay({ isOpen, onClose, onSearchSubmit }: SearchOverlay
                       key={marque.name}
                       type="button"
                       onClick={() => executeSearch(marque.name)}
-                      className="flex flex-col items-center justify-center p-3 rounded-lg bg-graphite/50 border border-border hover:border-gold/40 hover:bg-charcoal transition-all group"
+                      className="flex flex-col items-center justify-center p-3 rounded-lg bg-graphite/50 border border-border hover:border-gold/40 hover:bg-charcoal transition-all group cursor-pointer"
                     >
                       <span className="text-xs font-semibold text-primary font-sans group-hover:text-gold transition-colors">
                         {marque.name}
@@ -457,7 +415,6 @@ export function SearchOverlay({ isOpen, onClose, onSearchSubmit }: SearchOverlay
                 </div>
               </div>
 
-              {/* 2. Trending Searches */}
               <div>
                 <div className="flex items-center gap-2 text-xs uppercase tracking-wider font-semibold text-secondary font-sans mb-3 px-1">
                   <TrendingUp className="h-3.5 w-3.5 text-gold" />
@@ -469,7 +426,7 @@ export function SearchOverlay({ isOpen, onClose, onSearchSubmit }: SearchOverlay
                       key={suggestion}
                       type="button"
                       onClick={() => executeSearch(suggestion)}
-                      className="px-3.5 py-1.5 rounded-full bg-charcoal/80 border border-border text-xs text-secondary hover:text-primary hover:border-gold/40 hover:bg-graphite transition-all font-sans"
+                      className="px-3.5 py-1.5 rounded-full bg-charcoal/80 border border-border text-xs text-secondary hover:text-primary hover:border-gold/40 hover:bg-graphite transition-all font-sans cursor-pointer"
                     >
                       {suggestion}
                     </button>
@@ -477,7 +434,6 @@ export function SearchOverlay({ isOpen, onClose, onSearchSubmit }: SearchOverlay
                 </div>
               </div>
 
-              {/* 3. Recent Search History */}
               {recentSearches.length > 0 && (
                 <div>
                   <div className="flex items-center justify-between text-xs uppercase tracking-wider font-semibold text-secondary font-sans mb-3 px-1">
@@ -488,7 +444,7 @@ export function SearchOverlay({ isOpen, onClose, onSearchSubmit }: SearchOverlay
                     <button
                       type="button"
                       onClick={clearAllRecent}
-                      className="text-[11px] font-normal text-muted hover:text-red-400 transition-colors lowercase first-letter:uppercase"
+                      className="text-[11px] font-normal text-muted hover:text-red-400 transition-colors lowercase first-letter:uppercase cursor-pointer"
                     >
                       Clear all
                     </button>
@@ -509,7 +465,7 @@ export function SearchOverlay({ isOpen, onClose, onSearchSubmit }: SearchOverlay
                           type="button"
                           onClick={(e) => removeRecentSearch(e, item)}
                           aria-label={`Remove ${item} from search history`}
-                          className="text-muted hover:text-red-400 p-1 opacity-0 group-hover:opacity-100 transition-opacity"
+                          className="text-muted hover:text-red-400 p-1 opacity-0 group-hover:opacity-100 transition-opacity cursor-pointer"
                         >
                           <X className="h-3.5 w-3.5" />
                         </button>
@@ -522,9 +478,6 @@ export function SearchOverlay({ isOpen, onClose, onSearchSubmit }: SearchOverlay
           )}
         </div>
 
-        {/* ───────────────────────────────────────────────────────────── */}
-        {/* FOOTER KEYBOARD NAVIGATION TELEMETRY                          */}
-        {/* ───────────────────────────────────────────────────────────── */}
         <div className="mt-12 pt-4 border-t border-border/40 flex flex-wrap items-center justify-between text-[11px] font-mono text-muted select-none">
           <div className="flex items-center gap-4">
             <span className="flex items-center gap-1">

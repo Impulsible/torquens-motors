@@ -34,20 +34,20 @@ export function Footer() {
 
   return (
     <footer className="bg-obsidian border-t border-border relative overflow-hidden">
-      {/* ----------------------------------------------------------------- */}
-      {/* 1. TOP VISUAL DIVIDER (Checkerboard + Subtle Gradient Ambient)    */}
-      {/* ----------------------------------------------------------------- */}
+      {/* Top Visual Divider */}
       <div className="relative h-10 w-full overflow-hidden border-b border-border/40">
         <div className="absolute inset-0 checkerboard-bg opacity-15" />
         <div className="absolute inset-0 bg-linear-to-b from-obsidian via-transparent to-obsidian" />
       </div>
 
       <div className="container-torquens pt-12 pb-16">
-        {/* ----------------------------------------------------------------- */}
-        {/* 2. PRIVATE OFF-MARKET INVENTORY NEWSLETTER CAPTURE                */}
-        {/* ----------------------------------------------------------------- */}
+        {/* NEWSLETTER CAPTURE */}
         <div className="mb-14 p-6 sm:p-10 rounded-2xl bg-graphite border border-active-border relative overflow-hidden shadow-card">
-          <div className="absolute -top-24 -right-24 w-72 h-72 bg-gold/5 rounded-full blur-3xl pointer-events-none" />
+          <div
+            aria-hidden="true"
+            className="pointer-events-none absolute -top-24 -right-24 rounded-full bg-gold/5 blur-3xl"
+            style={{ width: 288, height: 288 }}
+          />
 
           <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-center relative z-10">
             <div className="lg:col-span-7 space-y-2">
@@ -65,7 +65,7 @@ export function Footer() {
 
             <div className="lg:col-span-5">
               {isSubscribed ? (
-                <div className="p-4 rounded-lg bg-emerald/10 border border-emerald/30 text-emerald flex items-center gap-3 animate-in fade-in duration-300">
+                <div className="p-4 rounded-lg bg-emerald/10 border border-emerald/30 text-emerald flex items-center gap-3 animate-fade-in">
                   <CheckCircle2 size={20} className="shrink-0" />
                   <span className="text-xs font-sans font-medium">
                     You have been enrolled in the Private Registry.
@@ -85,7 +85,7 @@ export function Footer() {
                   </div>
                   <button
                     type="submit"
-                    className="btn-primary text-xs uppercase tracking-widest font-semibold py-3.5 px-6 shrink-0 flex items-center justify-center gap-2"
+                    className="btn-primary text-xs uppercase tracking-widest font-semibold py-3.5 px-6 shrink-0 flex items-center justify-center gap-2 cursor-pointer"
                   >
                     <span>Request Access</span>
                     <ArrowRight size={14} />
@@ -96,9 +96,7 @@ export function Footer() {
           </div>
         </div>
 
-        {/* ----------------------------------------------------------------- */}
-        {/* 3. TRUST & MARKETPLACE SAFETY HIGHLIGHTS                           */}
-        {/* ----------------------------------------------------------------- */}
+        {/* TRUST HIGHLIGHTS */}
         <div className="grid grid-cols-1 sm:grid-cols-3 gap-6 py-8 mb-14 border-y border-border/60">
           <div className="flex items-center gap-4">
             <div className="w-10 h-10 rounded-lg bg-gold/10 border border-gold/20 flex items-center justify-center text-gold shrink-0">
@@ -143,13 +141,10 @@ export function Footer() {
           </div>
         </div>
 
-        {/* ----------------------------------------------------------------- */}
-        {/* 4. MAIN NAVIGATION MATRIX                                         */}
-        {/* ----------------------------------------------------------------- */}
+        {/* NAVIGATION MATRIX */}
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-10 lg:gap-8 mb-14">
-          {/* Brand Column */}
           <div className="lg:col-span-2 space-y-4">
-            <Link href="/" className="inline-block focus:outline-none">
+            <Link href="/" className="inline-block focus:outline-none cursor-pointer">
               <div className="flex flex-col">
                 <span className="text-2xl font-serif font-light tracking-[0.2em] text-primary">
                   TORQUENS
@@ -168,32 +163,31 @@ export function Footer() {
               <span className="badge-verified">✓ Verified Dealer Network</span>
             </div>
 
-            {/* Social Icons using react-icons/fa */}
             <div className="flex items-center gap-3 pt-2">
               <a
                 href="#"
-                className="w-9 h-9 rounded-md bg-charcoal border border-border flex items-center justify-center text-secondary hover:text-gold hover:border-gold transition-all duration-300"
+                className="w-9 h-9 rounded-md bg-charcoal border border-border flex items-center justify-center text-secondary hover:text-gold hover:border-gold transition-all duration-300 cursor-pointer"
                 aria-label="Facebook"
               >
                 <FaFacebook className="w-4 h-4" />
               </a>
               <a
                 href="#"
-                className="w-9 h-9 rounded-md bg-charcoal border border-border flex items-center justify-center text-secondary hover:text-gold hover:border-gold transition-all duration-300"
+                className="w-9 h-9 rounded-md bg-charcoal border border-border flex items-center justify-center text-secondary hover:text-gold hover:border-gold transition-all duration-300 cursor-pointer"
                 aria-label="Twitter"
               >
                 <FaTwitter className="w-4 h-4" />
               </a>
               <a
                 href="#"
-                className="w-9 h-9 rounded-md bg-charcoal border border-border flex items-center justify-center text-secondary hover:text-gold hover:border-gold transition-all duration-300"
+                className="w-9 h-9 rounded-md bg-charcoal border border-border flex items-center justify-center text-secondary hover:text-gold hover:border-gold transition-all duration-300 cursor-pointer"
                 aria-label="Instagram"
               >
                 <FaInstagram className="w-4 h-4" />
               </a>
               <a
                 href="#"
-                className="w-9 h-9 rounded-md bg-charcoal border border-border flex items-center justify-center text-secondary hover:text-gold hover:border-gold transition-all duration-300"
+                className="w-9 h-9 rounded-md bg-charcoal border border-border flex items-center justify-center text-secondary hover:text-gold hover:border-gold transition-all duration-300 cursor-pointer"
                 aria-label="Youtube"
               >
                 <FaYoutube className="w-4 h-4" />
@@ -201,7 +195,6 @@ export function Footer() {
             </div>
           </div>
 
-          {/* Quick Links */}
           <div>
             <h3 className="text-xs font-sans font-semibold uppercase tracking-[0.2em] text-gold mb-4">
               Quick Links
@@ -211,13 +204,13 @@ export function Footer() {
                 { label: 'Browse Vehicles', href: '/vehicles' },
                 { label: 'Curated Collections', href: '/collections' },
                 { label: 'Find Verified Dealers', href: '/dealers' },
-                { label: 'Sell / Trade Vehicle', href: '/sell' },
+                { label: 'Sell / Trade Vehicle', href: '/sell-trade' },
                 { label: 'Vehicle Comparison Engine', href: '/compare' },
               ].map((link) => (
                 <li key={link.label}>
                   <Link
                     href={link.href}
-                    className="text-xs text-secondary hover:text-primary transition-colors font-sans gold-underline inline-block py-0.5"
+                    className="text-xs text-secondary hover:text-primary transition-colors font-sans gold-underline inline-block py-0.5 cursor-pointer"
                   >
                     {link.label}
                   </Link>
@@ -226,7 +219,6 @@ export function Footer() {
             </ul>
           </div>
 
-          {/* Support */}
           <div>
             <h3 className="text-xs font-sans font-semibold uppercase tracking-[0.2em] text-gold mb-4">
               Support & Legal
@@ -242,7 +234,7 @@ export function Footer() {
                 <li key={link.label}>
                   <Link
                     href={link.href}
-                    className="text-xs text-secondary hover:text-primary transition-colors font-sans gold-underline inline-block py-0.5"
+                    className="text-xs text-secondary hover:text-primary transition-colors font-sans gold-underline inline-block py-0.5 cursor-pointer"
                   >
                     {link.label}
                   </Link>
@@ -251,7 +243,6 @@ export function Footer() {
             </ul>
           </div>
 
-          {/* Contact & Hubs */}
           <div>
             <h3 className="text-xs font-sans font-semibold uppercase tracking-[0.2em] text-gold mb-4">
               Concierge Hubs
@@ -273,13 +264,13 @@ export function Footer() {
               </li>
               <li className="flex items-center gap-2.5 text-xs text-secondary font-sans pt-1">
                 <Phone className="w-4 h-4 text-gold shrink-0" />
-                <a href="tel:+2348001234567" className="hover:text-primary transition-colors">
+                <a href="tel:+2348001234567" className="hover:text-primary transition-colors cursor-pointer">
                   +234 800 123 4567
                 </a>
               </li>
               <li className="flex items-center gap-2.5 text-xs text-secondary font-sans">
                 <Mail className="w-4 h-4 text-gold shrink-0" />
-                <a href="mailto:info@torquens.com" className="hover:text-primary transition-colors">
+                <a href="mailto:info@torquens.com" className="hover:text-primary transition-colors cursor-pointer">
                   info@torquens.com
                 </a>
               </li>
@@ -287,28 +278,25 @@ export function Footer() {
           </div>
         </div>
 
-        {/* ----------------------------------------------------------------- */}
-        {/* 5. BOTTOM BAR (Copyright, Policy Links, Scroll-to-Top)             */}
-        {/* ----------------------------------------------------------------- */}
+        {/* BOTTOM BAR */}
         <div className="pt-8 border-t border-border flex flex-col sm:flex-row items-center justify-between gap-4 text-xs font-sans text-muted">
           <p>&copy; {currentYear} TORQUENS MOTORS. All rights reserved.</p>
 
           <div className="flex items-center gap-6">
-            <Link href="/privacy" className="hover:text-primary transition-colors">
+            <Link href="/privacy" className="hover:text-primary transition-colors cursor-pointer">
               Privacy
             </Link>
-            <Link href="/terms" className="hover:text-primary transition-colors">
+            <Link href="/terms" className="hover:text-primary transition-colors cursor-pointer">
               Terms
             </Link>
-            <Link href="/cookies" className="hover:text-primary transition-colors">
+            <Link href="/cookies" className="hover:text-primary transition-colors cursor-pointer">
               Cookies
             </Link>
 
-            {/* Back to top trigger */}
             <button
               onClick={scrollToTop}
               aria-label="Scroll to top"
-              className="p-2 rounded-md bg-graphite border border-border text-secondary hover:text-gold hover:border-gold/40 transition-all duration-200 ml-2"
+              className="p-2 rounded-md bg-graphite border border-border text-secondary hover:text-gold hover:border-gold/40 transition-all duration-200 ml-2 cursor-pointer"
             >
               <ArrowUp size={14} />
             </button>

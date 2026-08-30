@@ -10,10 +10,6 @@ import { Button } from '@/components/ui/Button';
 import { Badge } from '@/components/ui/Badge';
 import { cn } from '@/utils/cn';
 
-/* -------------------------------------------------------------------------- */
-/*                              COLLECTION TYPES                              */
-/* -------------------------------------------------------------------------- */
-
 export interface Collection {
   id: string;
   name: string;
@@ -32,8 +28,10 @@ const MOCK_COLLECTIONS: Collection[] = [
     id: 'performance-icons',
     name: 'Performance Icons',
     subtitle: 'Track-Focused & V12 Heritage',
-    description: 'The pinnacle of motorsport engineering where naturally aspirated power meets carbon precision.',
-    image: 'https://images.unsplash.com/photo-1614162692292-7ac56d7f7f1e?q=80&w=1600&auto=format&fit=crop',
+    description:
+      'The pinnacle of motorsport engineering where naturally aspirated power meets carbon precision.',
+    image:
+      'https://images.unsplash.com/photo-1614162692292-7ac56d7f7f1e?q=80&w=1600&auto=format&fit=crop',
     vehicleCount: 14,
     href: '/collections/performance',
     featured: true,
@@ -44,8 +42,10 @@ const MOCK_COLLECTIONS: Collection[] = [
     id: 'luxury-suv',
     name: 'Luxury & Off-Road All-Terrain',
     subtitle: 'Refined Capability',
-    description: 'Commanding presence, air suspension comfort, and bespoke interior finishes.',
-    image: 'https://images.unsplash.com/photo-1544636331-e26879cd4d9b?q=80&w=1200&auto=format&fit=crop',
+    description:
+      'Commanding presence, air suspension comfort, and bespoke interior finishes.',
+    image:
+      'https://images.unsplash.com/photo-1544636331-e26879cd4d9b?q=80&w=1200&auto=format&fit=crop',
     vehicleCount: 9,
     href: '/collections/luxury-suv',
     featured: false,
@@ -56,8 +56,10 @@ const MOCK_COLLECTIONS: Collection[] = [
     id: 'electric-hypercars',
     name: 'Electric & Hybrid Revolution',
     subtitle: 'Instant Torque & Silent Power',
-    description: 'Discover the next era of hypercars with cutting-edge battery technology.',
-    image: 'https://images.unsplash.com/photo-1631295868223-63265b40d9e4?q=80&w=1200&auto=format&fit=crop',
+    description:
+      'Discover the next era of hypercars with cutting-edge battery technology.',
+    image:
+      'https://images.unsplash.com/photo-1631295868223-63265b40d9e4?q=80&w=1200&auto=format&fit=crop',
     vehicleCount: 7,
     href: '/collections/electric',
     featured: false,
@@ -66,35 +68,30 @@ const MOCK_COLLECTIONS: Collection[] = [
   },
 ];
 
-/* -------------------------------------------------------------------------- */
-/*                         FEATURED COLLECTIONS ROOT                          */
-/* -------------------------------------------------------------------------- */
+interface FeaturedCollectionsProps {
+  collections?: Collection[];
+}
 
-export function FeaturedCollections() {
+export function FeaturedCollections({ collections: collectionsProp }: FeaturedCollectionsProps) {
+  const collections = collectionsProp && collectionsProp.length > 0 ? collectionsProp : MOCK_COLLECTIONS;
+
   return (
     <section className="relative py-16 md:py-24 bg-obsidian overflow-hidden border-t border-border/40">
-      {/* Background Ambient Glow */}
       <div
         aria-hidden="true"
-        className="pointer-events-none absolute bottom-0 left-1/3 w-150 h-87.5 bg-gold/5 blur-[130px] rounded-full"
+        className="pointer-events-none absolute bottom-0 left-1/3 rounded-full bg-gold/5 blur-[130px]"
+        style={{ width: 600, height: 350 }}
       />
 
       <div className="container-torquens relative z-10">
-        {/* ───────────────────────────────────────────────────────────── */}
-        {/* HEADER: Section Title & Secondary Action                     */}
-        {/* ───────────────────────────────────────────────────────────── */}
         <div className="flex flex-col md:flex-row md:items-end justify-between gap-6 mb-12">
           <div className="space-y-2">
             <div className="flex items-center gap-2">
-              <Badge
-                variant="gold"
-                size="sm"
-                leftIcon={<Compass className="h-3 w-3" />}
-              >
+              <Badge variant="gold" size="sm" leftIcon={<Compass className="h-3 w-3" />}>
                 Curated Series
               </Badge>
               <span className="text-xs text-muted font-mono uppercase tracking-wider hidden sm:inline-block">
-                • 3 Primary Vault Categories
+                • {collections.length} Primary Vault Categories
               </span>
             </div>
 
@@ -106,22 +103,15 @@ export function FeaturedCollections() {
             </p>
           </div>
 
-          <Link href="/collections" className="shrink-0">
-            <Button
-              variant="outline"
-              size="sm"
-              rightIcon={<ArrowRight className="h-3.5 w-3.5" />}
-            >
+          <Link href="/collections" className="shrink-0 cursor-pointer">
+            <Button variant="outline" size="sm" rightIcon={<ArrowRight className="h-3.5 w-3.5" />}>
               Explore All Collections
             </Button>
           </Link>
         </div>
 
-        {/* ───────────────────────────────────────────────────────────── */}
-        {/* BENTO GRID DISPLAY                                            */}
-        {/* ───────────────────────────────────────────────────────────── */}
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
-          {MOCK_COLLECTIONS.map((collection) => {
+          {collections.map((collection) => {
             const isFeatured = collection.featured;
 
             return (
@@ -129,7 +119,7 @@ export function FeaturedCollections() {
                 key={collection.id}
                 href={collection.href}
                 className={cn(
-                  'group relative block focus:outline-none focus-visible:ring-2 focus-visible:ring-gold/60 rounded-xl overflow-hidden',
+                  'group relative block cursor-pointer focus:outline-none focus-visible:ring-2 focus-visible:ring-gold/60 rounded-xl overflow-hidden',
                   isFeatured ? 'lg:col-span-7' : 'lg:col-span-5'
                 )}
               >
@@ -141,7 +131,6 @@ export function FeaturedCollections() {
                     'border border-border/80 group-hover:border-gold/50 transition-all duration-500 shadow-card'
                   )}
                 >
-                  {/* Background Photography with Zoom Engine */}
                   <div className="absolute inset-0 z-0 bg-charcoal overflow-hidden">
                     <Image
                       src={collection.image}
@@ -154,16 +143,10 @@ export function FeaturedCollections() {
                       }
                       className="object-cover object-center brightness-75 contrast-105 transition-transform duration-700 ease-[cubic-bezier(0.16,1,0.3,1)] group-hover:scale-105"
                     />
-
-                    {/* Gradient Vignette Mask */}
                     <div className="absolute inset-0 bg-linear-to-t from-obsidian via-obsidian/60 to-black/30 opacity-90 transition-opacity duration-300 group-hover:opacity-80" />
                   </div>
 
-                  {/* ───────────────────────────────────────────────────────── */}
-                  {/* CARD CONTENT & OVERLAY                                    */}
-                  {/* ───────────────────────────────────────────────────────── */}
                   <div className="relative z-10 p-6 sm:p-8 flex flex-col justify-end h-full">
-                    {/* Top Badges */}
                     <div className="mb-auto flex items-center justify-between gap-2 z-10">
                       <Badge
                         variant={isFeatured ? 'gold' : 'glass'}
@@ -178,7 +161,6 @@ export function FeaturedCollections() {
                       </Badge>
                     </div>
 
-                    {/* Bottom Metadata & Titles */}
                     <div className="space-y-2 mt-12">
                       <span className="text-[11px] uppercase tracking-widest font-semibold text-gold font-sans block">
                         {collection.subtitle}
@@ -197,7 +179,6 @@ export function FeaturedCollections() {
                         {collection.description}
                       </p>
 
-                      {/* Explore CTA Bar */}
                       <div className="pt-3 flex items-center justify-between border-t border-white/10">
                         <span className="text-xs font-mono text-muted uppercase tracking-wider">
                           Dossier Series #{collection.id.slice(0, 4)}
@@ -219,3 +200,5 @@ export function FeaturedCollections() {
     </section>
   );
 }
+
+export default FeaturedCollections;

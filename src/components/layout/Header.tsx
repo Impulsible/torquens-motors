@@ -1,5 +1,6 @@
 /* eslint-disable react-hooks/set-state-in-effect */
 /* eslint-disable @typescript-eslint/no-unused-vars */
+/* eslint-disable @next/next/no-img-element */
 'use client';
 
 import Link from 'next/link';
@@ -21,6 +22,7 @@ import { UserMenu } from '../navigation/UserMenu';
 import { MobileMenu } from '../navigation/MobileMenu';
 import { SearchInput } from '../search/SearchInput';
 import { Button } from '@/components/ui/Button';
+import { cn } from '@/utils/cn';
 
 interface NavItem {
   label: string;
@@ -72,7 +74,6 @@ export function Header({
   const router = useRouter();
   const { data: session, status } = useSession();
 
-  // Prefer live session over props so SIGN IN never shows while logged in
   const liveUser: HeaderUser | null =
     status === 'authenticated' && session?.user
       ? {
@@ -147,7 +148,6 @@ export function Header({
     };
   }, [isSearchOpen, isMobileMenuOpen]);
 
-  // Close mobile menu on route change
   useEffect(() => {
     setIsMobileMenuOpen(false);
     setIsSearchOpen(false);
@@ -155,7 +155,7 @@ export function Header({
 
   const handleSearchSubmit = (query: string) => {
     if (query.trim()) {
-      router.push(`/search?q=${encodeURIComponent(query.trim())}`);
+      router.push(`/vehicles?search=${encodeURIComponent(query.trim())}`);
       setIsSearchOpen(false);
     }
   };
@@ -175,9 +175,7 @@ export function Header({
           <div className="flex items-center space-x-6">
             <span className="flex items-center gap-1.5 text-emerald">
               <span className="w-1.5 h-1.5 rounded-full bg-emerald animate-pulse" />
-              <span className="hidden sm:inline">
-                TORQUENS Verified Guarantee Active
-              </span>
+              <span className="hidden sm:inline">TORQUENS Verified Guarantee Active</span>
               <span className="sm:hidden">✓ Verified</span>
             </span>
             <span className="text-border hidden sm:inline">|</span>
@@ -188,7 +186,7 @@ export function Header({
             {!isAuthenticated && (
               <Link
                 href="/dealer/register"
-                className="hover:text-gold transition-colors hidden md:inline"
+                className="hover:text-gold transition-colors hidden md:inline cursor-pointer"
               >
                 Become a Dealer
               </Link>
@@ -196,19 +194,17 @@ export function Header({
             {isAuthenticated && (
               <Link
                 href={vaultHref}
-                className="hover:text-gold transition-colors hidden md:inline font-medium"
+                className="hover:text-gold transition-colors hidden md:inline font-medium cursor-pointer"
               >
                 Open Private Vault
               </Link>
             )}
             <a
               href="tel:+234800TORQUENS"
-              className="flex items-center gap-1 hover:text-primary transition-colors text-xs"
+              className="flex items-center gap-1 hover:text-primary transition-colors text-xs cursor-pointer"
             >
               <PhoneCall size={12} className="text-gold shrink-0" />
-              <span className="hidden sm:inline">
-                Concierge: +234 800 TORQUENS
-              </span>
+              <span className="hidden sm:inline">Concierge: +234 800 TORQUENS</span>
               <span className="sm:hidden">Call</span>
             </a>
           </div>
@@ -217,19 +213,16 @@ export function Header({
 
       {/* ── Main header ── */}
       <header
-        className={`fixed top-0 lg:top-7 left-0 right-0 z-50 transition-all duration-300 ${
+        className={cn(
+          'fixed top-0 lg:top-7 left-0 right-0 z-50 transition-all duration-300',
           isScrolled
             ? 'bg-obsidian/95 backdrop-blur-md border-b border-border shadow-card py-1.5 sm:py-2'
             : 'bg-obsidian/90 border-b border-border/40 py-2 sm:py-3 md:py-4'
-        }`}
+        )}
       >
         <div className="container-torquens px-2 sm:px-4">
           <div className="flex items-center justify-between gap-2 sm:gap-4">
-            {/* Logo */}
-            <Link
-              href="/"
-              className="flex items-center gap-2 sm:gap-3 group shrink-0"
-            >
+            <Link href="/" className="flex items-center gap-2 sm:gap-3 group shrink-0 cursor-pointer">
               <div className="flex flex-col leading-none">
                 <span className="text-base sm:text-xl md:text-2xl font-serif font-light tracking-widest text-primary group-hover:text-gold transition-colors">
                   TORQUENS
@@ -251,11 +244,10 @@ export function Header({
                   <Link
                     key={item.href}
                     href={item.href}
-                    className={`relative text-xs uppercase tracking-wider font-medium transition-colors duration-200 py-1 whitespace-nowrap ${
-                      isActive
-                        ? 'text-gold'
-                        : 'text-secondary hover:text-primary'
-                    }`}
+                    className={cn(
+                      'relative text-xs uppercase tracking-wider font-medium transition-colors duration-200 py-1 whitespace-nowrap cursor-pointer',
+                      isActive ? 'text-gold' : 'text-secondary hover:text-primary'
+                    )}
                   >
                     {item.label}
                     {item.badge && (
@@ -283,23 +275,21 @@ export function Header({
 
             {/* Right actions */}
             <div className="flex items-center gap-0.5 sm:gap-1 md:gap-2">
-              {/* Mobile search */}
               <button
                 type="button"
                 onClick={() => setIsSearchOpen(true)}
-                className="md:hidden flex items-center gap-1 sm:gap-2 bg-inset hover:bg-charcoal border border-border hover:border-gold/30 text-secondary hover:text-primary px-2 sm:px-3 py-1 sm:py-1.5 rounded-md transition-all duration-200 text-xs"
+                className="md:hidden flex items-center gap-1 sm:gap-2 bg-inset hover:bg-charcoal border border-border hover:border-gold/30 text-secondary hover:text-primary px-2 sm:px-3 py-1 sm:py-1.5 rounded-md transition-all duration-200 text-xs cursor-pointer"
                 aria-label="Open search"
               >
                 <Search size={14} className="text-muted shrink-0" />
                 <span className="hidden sm:inline text-muted">Search...</span>
               </button>
 
-              {/* Authenticated quick actions */}
               {isAuthenticated && (
                 <>
                   <button
                     type="button"
-                    className="relative p-1.5 sm:p-2 text-secondary hover:text-primary transition-colors"
+                    className="relative p-1.5 sm:p-2 text-secondary hover:text-primary transition-colors cursor-pointer"
                     aria-label="Notifications"
                   >
                     <Bell size={18} className="w-4 h-4 sm:w-4.5 sm:h-4.5" />
@@ -312,7 +302,7 @@ export function Header({
 
                   <Link
                     href="/compare"
-                    className="relative p-1.5 sm:p-2 text-secondary hover:text-primary transition-colors hidden xs:inline-flex"
+                    className="relative p-1.5 sm:p-2 text-secondary hover:text-primary transition-colors hidden xs:inline-flex cursor-pointer"
                     aria-label="Compare"
                   >
                     <Layers size={18} className="w-4 h-4 sm:w-4.5 sm:h-4.5" />
@@ -325,7 +315,7 @@ export function Header({
 
                   <Link
                     href="/dashboard/saved"
-                    className="relative p-1.5 sm:p-2 text-secondary hover:text-primary transition-colors hidden xs:inline-flex"
+                    className="relative p-1.5 sm:p-2 text-secondary hover:text-primary transition-colors hidden xs:inline-flex cursor-pointer"
                     aria-label="Saved vehicles"
                   >
                     <Heart size={18} className="w-4 h-4 sm:w-4.5 sm:h-4.5" />
@@ -338,8 +328,7 @@ export function Header({
 
                   <div className="hidden sm:block w-px h-6 bg-border mx-0.5" />
 
-                  {/* Open Vault CTA (desktop) */}
-                  <Link href={vaultHref} className="hidden md:inline-flex">
+                  <Link href={vaultHref} className="hidden md:inline-flex cursor-pointer">
                     <Button
                       variant="gold"
                       size="sm"
@@ -349,19 +338,13 @@ export function Header({
                     </Button>
                   </Link>
 
-                  {/* Avatar chip → profile */}
                   <Link
                     href="/dashboard/profile"
-                    className="hidden sm:flex items-center gap-2 pl-1 pr-2.5 py-1 rounded-full bg-graphite hover:bg-charcoal border border-border/80 hover:border-gold/40 transition-colors"
+                    className="hidden sm:flex items-center gap-2 pl-1 pr-2.5 py-1 rounded-full bg-graphite hover:bg-charcoal border border-border/80 hover:border-gold/40 transition-colors cursor-pointer"
                   >
                     <div className="w-7 h-7 rounded-full bg-gold/15 border border-gold/30 flex items-center justify-center text-gold font-serif text-xs overflow-hidden shrink-0">
                       {liveUser?.avatar ? (
-                        // eslint-disable-next-line @next/next/no-img-element
-                        <img
-                          src={liveUser.avatar}
-                          alt=""
-                          className="w-full h-full object-cover"
-                        />
+                        <img src={liveUser.avatar} alt="" className="w-full h-full object-cover" />
                       ) : (
                         liveUser?.name?.[0]?.toUpperCase() || 'C'
                       )}
@@ -376,23 +359,17 @@ export function Header({
                     </div>
                   </Link>
 
-                  {/* Full user menu (dropdown: profile, settings, sign out) */}
                   <UserMenu
-                    user={
-                      liveUser
-                        ? { ...liveUser, tier: liveUser.tier || 'CUSTOMER' }
-                        : null
-                    }
+                    user={liveUser ? { ...liveUser, tier: liveUser.tier || 'CUSTOMER' } : null}
                     isAuthenticated={true}
                   />
                 </>
               )}
 
-              {/* Guest CTAs — never shown when authenticated */}
               {!isAuthenticated && status !== 'loading' && (
                 <>
                   <div className="hidden sm:block w-px h-6 bg-border mx-0.5" />
-                  <Link href="/auth/login" className="hidden sm:inline-flex">
+                  <Link href="/auth/login" className="hidden sm:inline-flex cursor-pointer">
                     <Button
                       variant="ghost"
                       size="sm"
@@ -401,7 +378,7 @@ export function Header({
                       Sign In
                     </Button>
                   </Link>
-                  <Link href="/auth/register" className="hidden sm:inline-flex">
+                  <Link href="/auth/register" className="hidden sm:inline-flex cursor-pointer">
                     <Button
                       variant="gold"
                       size="sm"
@@ -410,14 +387,12 @@ export function Header({
                       Client Access
                     </Button>
                   </Link>
-                  {/* Compact guest menu on very small screens via UserMenu */}
                   <div className="sm:hidden">
                     <UserMenu user={null} isAuthenticated={false} />
                   </div>
                 </>
               )}
 
-              {/* Session loading shimmer */}
               {status === 'loading' && !isAuthenticated && (
                 <div className="hidden sm:flex items-center gap-2">
                   <div className="h-8 w-16 rounded-md bg-charcoal/80 animate-pulse" />
@@ -425,29 +400,24 @@ export function Header({
                 </div>
               )}
 
-              {/* Mobile menu toggle */}
               <button
                 type="button"
                 onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
-                className="lg:hidden p-1.5 sm:p-2 text-secondary hover:text-primary transition-colors"
+                className="lg:hidden p-1.5 sm:p-2 text-secondary hover:text-primary transition-colors cursor-pointer"
                 aria-label="Toggle menu"
               >
-                {isMobileMenuOpen ? (
-                  <X size={22} className="w-5 h-5" />
-                ) : (
-                  <Menu size={22} className="w-5 h-5" />
-                )}
+                {isMobileMenuOpen ? <X size={22} className="w-5 h-5" /> : <Menu size={22} className="w-5 h-5" />}
               </button>
             </div>
           </div>
         </div>
       </header>
 
-      {/* ── Mobile search overlay ── */}
+      {/* Mobile search overlay */}
       {isSearchOpen && (
         <div className="fixed inset-0 z-50 flex items-start justify-center pt-16 sm:pt-20 md:pt-28 px-3 sm:px-4 bg-obsidian/90 backdrop-blur-md">
           <div
-            className="absolute inset-0"
+            className="absolute inset-0 cursor-pointer"
             onClick={() => setIsSearchOpen(false)}
             aria-hidden="true"
           />
@@ -468,7 +438,7 @@ export function Header({
               <button
                 type="button"
                 onClick={() => setIsSearchOpen(false)}
-                className="text-xs text-muted hover:text-primary px-2 py-1 border border-border rounded"
+                className="text-xs text-muted hover:text-primary px-2 py-1 border border-border rounded cursor-pointer"
               >
                 ESC
               </button>
@@ -487,7 +457,7 @@ export function Header({
                         setSearchQuery(tag);
                         handleSearchSubmit(tag);
                       }}
-                      className="text-xs bg-charcoal hover:bg-border text-secondary hover:text-gold px-2 sm:px-3 py-1 sm:py-1.5 rounded-md border border-border transition-all"
+                      className="text-xs bg-charcoal hover:bg-border text-secondary hover:text-gold px-2 sm:px-3 py-1 sm:py-1.5 rounded-md border border-border transition-all cursor-pointer"
                     >
                       {tag}
                     </button>
@@ -507,7 +477,7 @@ export function Header({
                 <button
                   type="button"
                   onClick={() => handleSearchSubmit(searchQuery)}
-                  className="text-xs bg-gold text-obsidian px-2 sm:px-3 py-1.5 rounded flex items-center gap-1 font-medium shrink-0"
+                  className="text-xs bg-gold text-obsidian px-2 sm:px-3 py-1.5 rounded flex items-center gap-1 font-medium shrink-0 cursor-pointer"
                 >
                   Search <ArrowRight size={12} />
                 </button>

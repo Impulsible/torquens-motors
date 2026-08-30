@@ -1,5 +1,6 @@
 'use client';
 
+import React from 'react';
 import Link from 'next/link';
 import {
   Shield,
@@ -86,14 +87,15 @@ const trustStats: TrustStat[] = [
 export function TrustSection() {
   return (
     <section className="relative py-16 md:py-24 bg-obsidian overflow-hidden">
-      {/* Ambient Atmosphere */}
       <div className="pointer-events-none absolute inset-0 checkerboard-bg opacity-[0.03]" />
-      <div className="pointer-events-none absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-225 h-125 bg-gold/5 blur-[140px] rounded-full" />
+      <div
+        aria-hidden="true"
+        className="pointer-events-none absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 rounded-full bg-gold/5 blur-[140px]"
+        style={{ width: 900, height: 500 }}
+      />
 
       <div className="container-torquens relative z-10">
-        {/* ----------------------------------------------------------------- */}
-        {/* SECTION HEADER                                                    */}
-        {/* ----------------------------------------------------------------- */}
+        {/* HEADER */}
         <div className="text-center max-w-2xl mx-auto mb-12 md:mb-16 space-y-3">
           <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-gold/10 border border-gold/20 text-gold text-[11px] font-sans font-semibold uppercase tracking-widest">
             <Sparkles size={12} />
@@ -101,20 +103,24 @@ export function TrustSection() {
           </div>
           <h2 className="section-title">Engineered to Move You</h2>
           <p className="text-secondary text-sm md:text-base font-sans leading-relaxed">
-            We combine automotive excellence with verified trust infrastructure —
-            so acquiring a luxury vehicle feels as refined as driving one.
+            We combine automotive excellence with verified trust infrastructure — so acquiring a luxury vehicle feels as refined as driving one.
           </p>
         </div>
 
-        {/* ----------------------------------------------------------------- */}
-        {/* HERO TRUST BANNER                                                 */}
-        {/* ----------------------------------------------------------------- */}
+        {/* HERO TRUST BANNER */}
         <div className="mb-10 md:mb-14 p-6 sm:p-8 rounded-2xl bg-graphite border border-active-border relative overflow-hidden shadow-card">
-          <div className="absolute -top-20 -right-20 w-64 h-64 bg-emerald/10 rounded-full blur-3xl pointer-events-none" />
-          <div className="absolute -bottom-20 -left-20 w-64 h-64 bg-gold/5 rounded-full blur-3xl pointer-events-none" />
+          <div
+            aria-hidden="true"
+            className="absolute -top-20 -right-20 rounded-full bg-emerald/10 blur-3xl pointer-events-none"
+            style={{ width: 256, height: 256 }}
+          />
+          <div
+            aria-hidden="true"
+            className="absolute -bottom-20 -left-20 rounded-full bg-gold/5 blur-3xl pointer-events-none"
+            style={{ width: 256, height: 256 }}
+          />
 
           <div className="relative z-10 flex flex-col lg:flex-row lg:items-center gap-8">
-            {/* Left: Guarantee Copy */}
             <div className="flex-1 space-y-4">
               <Badge variant="verified" size="md" glow>
                 <span className="inline-flex items-center gap-1.5">
@@ -127,9 +133,7 @@ export function TrustSection() {
                 Trust is not optional — it is engineered.
               </h3>
               <p className="text-secondary text-sm font-sans leading-relaxed max-w-xl">
-                Every vehicle on TORQUENS passes document review, seller verification,
-                and optional concierge inspection. Buy with confidence, whether you are
-                acquiring from Lagos, Abuja, or an international private seller.
+                Every vehicle on TORQUENS passes document review, seller verification, and optional concierge inspection. Buy with confidence, whether you are acquiring from Lagos, Abuja, or an international private seller.
               </p>
 
               <div className="flex flex-wrap items-center gap-3 pt-1">
@@ -150,8 +154,7 @@ export function TrustSection() {
               </div>
             </div>
 
-            {/* Right: Live Stats */}
-            <div className="grid grid-cols-2 gap-3 sm:gap-4 lg:w-95 shrink-0">
+            <div className="grid grid-cols-2 gap-3 sm:gap-4 lg:w-96 shrink-0">
               {trustStats.map((stat) => (
                 <div
                   key={stat.label}
@@ -174,9 +177,7 @@ export function TrustSection() {
           </div>
         </div>
 
-        {/* ----------------------------------------------------------------- */}
-        {/* TRUST POINTS GRID                                                 */}
-        {/* ----------------------------------------------------------------- */}
+        {/* TRUST POINTS GRID */}
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5 md:gap-6">
           {trustPoints.map((point, index) => {
             const Icon = point.icon;
@@ -188,13 +189,11 @@ export function TrustSection() {
                 className={cn(
                   'group relative p-6 bg-graphite border-border overflow-hidden',
                   'transition-all duration-500 hover:-translate-y-1 hover:shadow-card',
-                  isEmerald
-                    ? 'hover:border-emerald/40'
-                    : 'hover:border-gold/40'
+                  isEmerald ? 'hover:border-emerald/40' : 'hover:border-gold/40'
                 )}
               >
-                {/* Hover ambient glow */}
                 <div
+                  aria-hidden="true"
                   className={cn(
                     'pointer-events-none absolute -top-12 -right-12 w-32 h-32 rounded-full blur-3xl opacity-0 transition-opacity duration-500 group-hover:opacity-100',
                     isEmerald ? 'bg-emerald/10' : 'bg-gold/10'
@@ -202,7 +201,6 @@ export function TrustSection() {
                 />
 
                 <div className="relative z-10 flex items-start gap-4">
-                  {/* Icon Stage */}
                   <div
                     className={cn(
                       'shrink-0 w-12 h-12 rounded-xl border flex items-center justify-center transition-all duration-300',
@@ -214,7 +212,6 @@ export function TrustSection() {
                     <Icon className="h-5 w-5" />
                   </div>
 
-                  {/* Copy */}
                   <div className="min-w-0 space-y-1.5">
                     <h3 className="text-base font-serif font-light text-primary group-hover:text-gold transition-colors duration-300">
                       {point.title}
@@ -225,7 +222,6 @@ export function TrustSection() {
                   </div>
                 </div>
 
-                {/* Bottom accent line on hover */}
                 <div
                   className={cn(
                     'absolute bottom-0 left-0 h-0.5 w-0 transition-all duration-500 ease-out group-hover:w-full',
@@ -237,9 +233,7 @@ export function TrustSection() {
           })}
         </div>
 
-        {/* ----------------------------------------------------------------- */}
-        {/* BOTTOM CONCIERGE CTA STRIP                                        */}
-        {/* ----------------------------------------------------------------- */}
+        {/* BOTTOM CONCIERGE CTA STRIP */}
         <div className="mt-12 md:mt-16 p-5 sm:p-6 rounded-2xl bg-inset border border-border flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
           <div className="flex items-start sm:items-center gap-3">
             <div className="w-10 h-10 rounded-lg bg-gold/10 border border-gold/20 flex items-center justify-center text-gold shrink-0">
@@ -257,13 +251,10 @@ export function TrustSection() {
 
           <Link
             href="/contact"
-            className="btn-primary text-xs uppercase tracking-widest font-semibold py-3 px-5 shrink-0 flex items-center gap-2 group"
+            className="btn-primary text-xs uppercase tracking-widest font-semibold py-3 px-5 shrink-0 flex items-center gap-2 group cursor-pointer"
           >
             <span>Speak to Concierge</span>
-            <ArrowRight
-              size={14}
-              className="group-hover:translate-x-1 transition-transform"
-            />
+            <ArrowRight size={14} className="group-hover:translate-x-1 transition-transform" />
           </Link>
         </div>
       </div>
