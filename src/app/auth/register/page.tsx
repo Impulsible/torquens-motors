@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 /* eslint-disable react-hooks/incompatible-library */
 /* eslint-disable @typescript-eslint/no-unused-vars */
 'use client';
@@ -8,6 +9,7 @@ import Image from 'next/image';
 import { useRouter } from 'next/navigation';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
+import type { z } from 'zod';
 import {
   User,
   Mail,
@@ -80,7 +82,7 @@ function RegisterContent() {
     setValue,
     watch,
     formState: { errors, isSubmitting },
-  } = useForm<RegisterInput>({
+  } = useForm<z.input<typeof registerSchema>, any, RegisterInput>({
     resolver: zodResolver(registerSchema),
     defaultValues: {
       name: '',
@@ -93,7 +95,7 @@ function RegisterContent() {
     mode: 'onTouched',
   });
 
-  const termsAccepted = watch('termsAccepted');
+  const termsAccepted = Boolean(watch('termsAccepted'));
 
   const onSubmit = async (data: RegisterInput) => {
     setAuthError(null);
@@ -106,7 +108,6 @@ function RegisterContent() {
       if (data.phone) formData.append('phone', data.phone);
       formData.append('password', data.password);
       formData.append('confirmPassword', data.confirmPassword);
-      // ✅ FIXED: Explicitly append termsAccepted to FormData so the server receives it
       formData.append('termsAccepted', data.termsAccepted ? 'true' : 'false');
 
       const result = (await registerAction(null, formData)) as RegistrationResponse | undefined;
@@ -166,7 +167,7 @@ function RegisterContent() {
 
         <div className="relative z-10 w-full max-w-md animate-slide-up">
           <div className="p-8 sm:p-10 rounded-2xl bg-graphite/95 border border-border/80 text-center shadow-dropdown backdrop-blur-md relative overflow-hidden">
-            <div className="absolute top-0 left-0 right-0 h-0.5  from-transparent via-gold to-transparent" />
+            <div className="absolute top-0 left-0 right-0 h-0.5 from-transparent via-gold to-transparent" />
 
             <div className="w-16 h-16 rounded-full bg-gold/10 border border-gold/30 flex items-center justify-center mx-auto mb-6 shadow-glow">
               <CheckCircle2 className="h-8 w-8 text-gold" />
