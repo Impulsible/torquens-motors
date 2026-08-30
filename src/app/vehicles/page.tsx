@@ -1,3 +1,4 @@
+import { Suspense } from 'react';
 import type { Metadata } from 'next';
 import { Container } from '@/components/ui/Container';
 import { Badge } from '@/components/ui/Badge';
@@ -100,6 +101,38 @@ async function getFilterOptions() {
 }
 
 /* -------------------------------------------------------------------------- */
+/*                            LOADING FALLBACKS                               */
+/* -------------------------------------------------------------------------- */
+
+// Grid skeleton loader
+function VehicleGridFallback() {
+  return (
+    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+      {Array.from({ length: 9 }).map((_, i) => (
+        <div key={i} className="bg-graphite border border-border rounded-xl overflow-hidden">
+          <div className="aspect-16/10 w-full bg-charcoal animate-pulse" />
+          <div className="p-4 space-y-3">
+            <div className="h-4 w-24 bg-charcoal rounded animate-pulse" />
+            <div className="h-6 w-3/4 bg-charcoal rounded animate-pulse" />
+            <div className="h-5 w-1/3 bg-charcoal rounded animate-pulse" />
+          </div>
+        </div>
+      ))}
+    </div>
+  );
+}
+
+// Sort skeleton
+function VehicleSortFallback() {
+  return <div className="h-10 w-32 bg-graphite border border-border/70 rounded-lg animate-pulse" />;
+}
+
+// Search skeleton
+function CatalogueSearchFallback() {
+  return <div className="h-11 w-full bg-inset border border-border rounded-lg animate-pulse" />;
+}
+
+/* -------------------------------------------------------------------------- */
 /*                               PAGE COMPONENT                               */
 /* -------------------------------------------------------------------------- */
 
@@ -162,7 +195,9 @@ export default async function VehiclesPage() {
 
             {/* Catalogue Search Component (Client Component) */}
             <div className="w-full md:w-80 shrink-0">
-              <CatalogueSearch />
+              <Suspense fallback={<CatalogueSearchFallback />}>
+                <CatalogueSearch />
+              </Suspense>
             </div>
           </div>
 
@@ -234,15 +269,17 @@ export default async function VehiclesPage() {
         <div className="flex flex-col lg:flex-row gap-8 items-start">
           {/* Filters Sidebar (Desktop Sticky) */}
           <aside className="hidden lg:block w-72 shrink-0 sticky top-28 space-y-4">
-            <VehicleFilters
-              makes={filterOptions.makes}
-              models={filterOptions.models}
-              bodyTypes={filterOptions.bodyTypes}
-              fuelTypes={filterOptions.fuelTypes}
-              transmissions={filterOptions.transmissions}
-              drivetrains={filterOptions.drivetrains}
-              locations={filterOptions.locations}
-            />
+            <Suspense fallback={<div className="h-96 bg-graphite border border-border/70 rounded-xl animate-pulse" />}>
+              <VehicleFilters
+                makes={filterOptions.makes}
+                models={filterOptions.models}
+                bodyTypes={filterOptions.bodyTypes}
+                fuelTypes={filterOptions.fuelTypes}
+                transmissions={filterOptions.transmissions}
+                drivetrains={filterOptions.drivetrains}
+                locations={filterOptions.locations}
+              />
+            </Suspense>
           </aside>
 
           {/* Vehicle Grid & Sort */}
@@ -254,24 +291,30 @@ export default async function VehiclesPage() {
                   curated inventory
                 </span>
               </p>
-              <VehicleSort />
+              <Suspense fallback={<VehicleSortFallback />}>
+                <VehicleSort />
+              </Suspense>
             </div>
 
-            <VehicleGrid />
+            <Suspense fallback={<VehicleGridFallback />}>
+              <VehicleGrid />
+            </Suspense>
           </div>
         </div>
 
         {/* Mobile Filters Drawer Container */}
         <div className="lg:hidden mt-8">
-          <VehicleFilters
-            makes={filterOptions.makes}
-            models={filterOptions.models}
-            bodyTypes={filterOptions.bodyTypes}
-            fuelTypes={filterOptions.fuelTypes}
-            transmissions={filterOptions.transmissions}
-            drivetrains={filterOptions.drivetrains}
-            locations={filterOptions.locations}
-          />
+          <Suspense fallback={<div className="h-96 bg-graphite border border-border/70 rounded-xl animate-pulse" />}>
+            <VehicleFilters
+              makes={filterOptions.makes}
+              models={filterOptions.models}
+              bodyTypes={filterOptions.bodyTypes}
+              fuelTypes={filterOptions.fuelTypes}
+              transmissions={filterOptions.transmissions}
+              drivetrains={filterOptions.drivetrains}
+              locations={filterOptions.locations}
+            />
+          </Suspense>
         </div>
       </Container>
     </main>
