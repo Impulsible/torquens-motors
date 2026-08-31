@@ -1,10 +1,10 @@
-'use client';
+/* eslint-disable @typescript-eslint/no-unused-vars */
+"use client";
 
-import React, { useState } from 'react';
-import Image from 'next/image';
-import Link from 'next/link';
+import React, { useState } from "react";
+import Image from "next/image";
+import Link from "next/link";
 import {
-  Heart,
   GitCompare,
   MapPin,
   Gauge,
@@ -12,14 +12,15 @@ import {
   Sparkles,
   ShieldCheck,
   ArrowUpRight,
-} from 'lucide-react';
+} from "lucide-react";
 
-import { Badge } from '@/components/ui/Badge';
-import { Button } from '@/components/ui/Button';
-import { Card } from '@/components/ui/Card';
-import { formatCurrency } from '@/utils/helpers';
-import { cn } from '@/utils/cn';
-import { useComparison } from '@/contexts/ComparisonContext';
+import { Badge } from "@/components/ui/Badge";
+import { Button } from "@/components/ui/Button";
+import { Card } from "@/components/ui/Card";
+import { SaveButton } from "./SaveButton";
+import { formatCurrency } from "@/utils/helpers";
+import { cn } from "@/utils/cn";
+import { useComparison } from "@/contexts/ComparisonContext";
 
 export interface Vehicle {
   power: number;
@@ -34,8 +35,8 @@ export interface Vehicle {
   images: string[];
   transmission: string;
   fuelType: string;
-  verified?: 'VERIFIED' | 'PENDING' | 'UNVERIFIED' | boolean;
-  status?: 'AVAILABLE' | 'SOLD' | 'RESERVED' | 'PENDING' | string;
+  verified?: "VERIFIED" | "PENDING" | "UNVERIFIED" | boolean;
+  status?: "AVAILABLE" | "SOLD" | "RESERVED" | "PENDING" | string;
   location: string;
 }
 
@@ -48,6 +49,7 @@ export interface VehicleCardProps {
   onFavoriteToggle?: (id: string) => void;
   onCompareToggle?: (id: string) => void;
   onCompare?: (id: string) => void;
+  showSave?: boolean;
   showCompare?: boolean;
   className?: string;
 }
@@ -61,6 +63,7 @@ export function VehicleCard({
   onFavoriteToggle,
   onCompareToggle,
   onCompare,
+  showSave = true,
   showCompare = true,
   className,
 }: VehicleCardProps) {
@@ -69,41 +72,41 @@ export function VehicleCard({
   const [compared, setCompared] = useState(isCompared);
 
   // Comparison context
-  const { addVehicle, removeVehicle, isInComparison, count, maxVehicles } = useComparison();
+  const { addVehicle, removeVehicle, isInComparison, count, maxVehicles } =
+    useComparison();
   const isInCompare = isInComparison(vehicle.id);
   const canAddToCompare = count < maxVehicles;
 
-  const isVerified = vehicle.verified === 'VERIFIED' || vehicle.verified === true;
-  const isSold = vehicle.status?.toUpperCase() === 'SOLD';
+  const isVerified =
+    vehicle.verified === "VERIFIED" || vehicle.verified === true;
+  const isSold = vehicle.status?.toUpperCase() === "SOLD";
   const isReserved =
-    vehicle.status?.toUpperCase() === 'RESERVED' ||
-    vehicle.status?.toUpperCase() === 'PENDING';
+    vehicle.status?.toUpperCase() === "RESERVED" ||
+    vehicle.status?.toUpperCase() === "PENDING";
 
-  const handleFavoriteClick = (e: React.MouseEvent) => {
-    e.preventDefault();
-    e.stopPropagation();
-    setFavorite((prev) => !prev);
+  const handleFavoriteToggle = (saved: boolean) => {
+    setFavorite(saved);
     onFavoriteToggle?.(vehicle.id);
   };
 
   const handleCompareClick = (e: React.MouseEvent) => {
     e.preventDefault();
     e.stopPropagation();
-    
+
     // Update local state
     setCompared((prev) => !prev);
-    
+
     // Use the comparison context
     if (isInCompare) {
       removeVehicle(vehicle.id);
     } else {
       addVehicle(vehicle.id).catch((error) => {
-        console.error('Failed to add to comparison:', error);
+        console.error("Failed to add to comparison:", error);
         // Revert local state if add fails
         setCompared((prev) => !prev);
       });
     }
-    
+
     onCompareToggle?.(vehicle.id);
     onCompare?.(vehicle.id);
   };
@@ -111,9 +114,9 @@ export function VehicleCard({
   return (
     <Card
       className={cn(
-        'group flex flex-col h-full overflow-hidden bg-graphite border-border hover:border-active-border transition-all duration-500 hover:-translate-y-1 hover:shadow-card',
-        featured && 'border-gold/30 shadow-goldGlowSm',
-        className
+        "group flex flex-col h-full overflow-hidden bg-graphite border-border hover:border-active-border transition-all duration-500 hover:-translate-y-1 hover:shadow-card",
+        featured && "border-gold/30 shadow-goldGlowSm",
+        className,
       )}
     >
       {/* ───────────────────────────────────────────────────────────── */}
@@ -134,9 +137,9 @@ export function VehicleCard({
             priority={priority}
             sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 33vw"
             className={cn(
-              'object-cover transition-all duration-700 ease-out group-hover:scale-105',
-              imageLoaded ? 'opacity-100' : 'opacity-0',
-              isSold && 'grayscale-40 brightness-75'
+              "object-cover transition-all duration-700 ease-out group-hover:scale-105",
+              imageLoaded ? "opacity-100" : "opacity-0",
+              isSold && "grayscale-40 brightness-75",
             )}
             onLoad={() => setImageLoaded(true)}
           />
@@ -180,12 +183,27 @@ export function VehicleCard({
                 Reserved
               </Badge>
             ) : (
-              <Badge variant="default" size="sm" className="font-mono bg-obsidian/80 backdrop-blur-md">
+              <Badge
+                variant="default"
+                size="sm"
+                className="font-mono bg-obsidian/80 backdrop-blur-md"
+              >
                 {vehicle.year}
               </Badge>
             )}
           </div>
         </div>
+
+        {/* Save Button - Top Right Corner */}
+        {showSave && (
+          <div className="absolute top-3 right-3 z-10">
+            <SaveButton
+              vehicleId={vehicle.id}
+              variant="icon"
+              onSaveChange={handleFavoriteToggle}
+            />
+          </div>
+        )}
 
         {/* Floating Glassmorphic Quick Action Controls (Reveals on Hover) */}
         <div className="absolute bottom-3 right-3 left-3 flex items-center justify-end gap-2 z-10 opacity-0 translate-y-2 transition-all duration-300 ease-luxury group-hover:opacity-100 group-hover:translate-y-0">
@@ -195,39 +213,20 @@ export function VehicleCard({
               type="button"
               onClick={handleCompareClick}
               aria-label="Compare vehicle"
-              title={isInCompare ? 'Remove from comparison' : 'Add to comparison'}
+              title={
+                isInCompare ? "Remove from comparison" : "Add to comparison"
+              }
               className={cn(
-                'flex h-8 w-8 items-center justify-center rounded-md border backdrop-blur-md transition-all duration-200',
+                "flex h-8 w-8 items-center justify-center rounded-md border backdrop-blur-md transition-all duration-200",
                 isInCompare || compared
-                  ? 'bg-gold border-gold text-obsidian shadow-goldGlowSm'
-                  : 'bg-obsidian/80 border-border text-secondary hover:text-primary hover:border-gold/40'
+                  ? "bg-gold border-gold text-obsidian shadow-goldGlowSm"
+                  : "bg-obsidian/80 border-border text-secondary hover:text-primary hover:border-gold/40",
               )}
               disabled={!isInCompare && !canAddToCompare}
             >
               <GitCompare className="h-3.5 w-3.5" />
             </button>
           )}
-
-          {/* Favorite Toggle */}
-          <button
-            type="button"
-            onClick={handleFavoriteClick}
-            aria-label="Save to garage"
-            title="Save to My Garage"
-            className={cn(
-              'flex h-8 w-8 items-center justify-center rounded-md border backdrop-blur-md transition-all duration-200',
-              favorite
-                ? 'bg-red-500/20 border-red-500/40 text-red-400'
-                : 'bg-obsidian/80 border-border text-secondary hover:text-red-400 hover:border-red-500/30'
-            )}
-          >
-            <Heart
-              className={cn(
-                'h-3.5 w-3.5 transition-transform active:scale-125',
-                favorite && 'fill-current text-red-400'
-              )}
-            />
-          </button>
         </div>
       </div>
 
@@ -259,8 +258,8 @@ export function VehicleCard({
             </span>
             <span className="font-sans text-lg font-bold tracking-tight text-primary">
               {formatCurrency
-                ? formatCurrency(vehicle.price, vehicle.currency || 'NGN')
-                : `${vehicle.currency === 'USD' ? '$' : '₦'}${vehicle.price.toLocaleString()}`}
+                ? formatCurrency(vehicle.price, vehicle.currency || "NGN")
+                : `${vehicle.currency === "USD" ? "$" : "₦"}${vehicle.price.toLocaleString()}`}
             </span>
           </div>
 
@@ -274,8 +273,10 @@ export function VehicleCard({
                 <Gauge className="h-3 w-3 text-secondary shrink-0" /> ODO
               </span>
               <span className="font-semibold text-primary mt-0.5 truncate font-mono">
-                {vehicle.mileage.toLocaleString()}{' '}
-                <span className="text-[9px] text-secondary font-sans font-normal">KM</span>
+                {vehicle.mileage.toLocaleString()}{" "}
+                <span className="text-[9px] text-secondary font-sans font-normal">
+                  KM
+                </span>
               </span>
             </div>
 
@@ -311,7 +312,7 @@ export function VehicleCard({
 
           <Link href={`/vehicles/${vehicle.slug}`}>
             <Button
-              variant={featured ? 'primary' : 'secondary'}
+              variant={featured ? "primary" : "secondary"}
               size="sm"
               className="text-xs py-1.5 px-3 flex items-center gap-1"
             >

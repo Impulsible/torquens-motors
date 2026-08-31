@@ -1,8 +1,10 @@
+/* eslint-disable @typescript-eslint/no-unused-vars */
 /* eslint-disable @typescript-eslint/no-require-imports */
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import type { Metadata } from 'next';
 import { notFound } from 'next/navigation';
 import Link from 'next/link';
+import Image from 'next/image';
 import {
   ArrowLeft,
   Calendar,
@@ -25,6 +27,7 @@ import { VehicleEnquiryForm } from '@/components/vehicle/VehicleEnquiryForm';
 import { SpecificationList, type VehicleSpecification } from '@/components/shared/SpecificationList';
 import { RelatedVehicles } from '@/components/vehicle/RelatedVehicles';
 import * as VehicleService from '@/services/vehicle.service';
+import { CloudinaryService } from '@/services/cloudinary.service';
 import { formatCurrency } from '@/utils/helpers';
 
 // Note: The comparison context is client-side only, so we can't use it in a Server Component.
@@ -35,6 +38,45 @@ interface PageProps {
   params: Promise<{
     slug: string;
   }>;
+}
+
+// -----------------------------------------------------------------------------
+// IMAGE OPTIMIZATION HELPER
+// -----------------------------------------------------------------------------
+function getOptimizedImage(url: string, size: 'thumbnail' | 'small' | 'medium' | 'large' = 'large'): string {
+  if (!url) return '/placeholder-vehicle.jpg';
+  
+  // Check if it's a Cloudinary URL
+  if (url.includes('cloudinary.com')) {
+    try {
+      // Extract public ID from Cloudinary URL
+      // Example: https://res.cloudinary.com/cloud-name/image/upload/v1234567890/folder/vehicle-id.jpg
+      const urlParts = url.split('/');
+      const uploadIndex = urlParts.indexOf('upload');
+      if (uploadIndex === -1) return url;
+      
+      // Get the part after 'upload' but before version if present
+      let publicId = urlParts.slice(uploadIndex + 1).join('/');
+      // Remove version prefix if present (e.g., v1234567890/)
+      publicId = publicId.replace(/^v\d+\//, '');
+      // Remove file extension
+      publicId = publicId.replace(/\.[^.]+$/, '');
+      
+      if (!publicId) return url;
+      
+      const sizes = {
+        thumbnail: CloudinaryService.getThumbnailUrl(publicId, 200),
+        small: CloudinaryService.getOptimizedUrl(publicId, { width: 400, height: 300 }),
+        medium: CloudinaryService.getOptimizedUrl(publicId, { width: 800, height: 600 }),
+        large: CloudinaryService.getOptimizedUrl(publicId, { width: 1200, height: 900 }),
+      };
+      return sizes[size];
+    } catch (error) {
+      console.warn('Failed to optimize Cloudinary URL:', url, error);
+      return url;
+    }
+  }
+  return url;
 }
 
 // -----------------------------------------------------------------------------
@@ -58,6 +100,11 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
   const pageTitle = `${vehicle.year} ${vehicle.make} ${vehicle.model} — ${formattedPrice} | TORQUENS MOTORS`;
   const description = `Acquire this verified ${vehicle.year} ${vehicle.make} ${vehicle.model} in ${vehicle.location}. ${vehicle.mileage.toLocaleString()} km, ${vehicle.transmission} gearbox, ${vehicle.fuelType}. Verified luxury marketplace dossier.`;
 
+  // Get optimized OG image
+  const ogImage = vehicle.images.length > 0 
+    ? getOptimizedImage(vehicle.images[0], 'large')
+    : '/og-torquens.jpg';
+
   return {
     title: pageTitle,
     description,
@@ -74,7 +121,13 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
       description,
       url: `https://torquensmotors.com/vehicles/${vehicle.slug}`,
       siteName: 'TORQUENS MOTORS',
-      images: vehicle.images.length > 0 ? [{ url: vehicle.images[0] }] : [],
+      images: [{ url: ogImage }],
+    },
+    twitter: {
+      card: 'summary_large_image',
+      title: pageTitle,
+      description,
+      images: [ogImage],
     },
   };
 }
@@ -227,7 +280,7 @@ export default async function VehicleDetailPage({ params }: PageProps) {
     '@context': 'https://schema.org/',
     '@type': 'Car',
     name: `${vehicle.year} ${vehicle.make} ${vehicle.model}`,
-    image: vehicle.images,
+    image: vehicle.images.map(img => getOptimizedImage(img, 'large')),
     description: vehicle.description,
     brand: {
       '@type': 'Brand',
@@ -308,12 +361,12 @@ export default async function VehicleDetailPage({ params }: PageProps) {
             {/* LEFT COLUMN: Media Gallery, Telemetry & Technical Dossier     */}
             {/* ============================================================= */}
             <div className="lg:col-span-8 space-y-8">
-              {/* Media Gallery */}
+              {/* Media Gallery - Pass optimized images */}
               <VehicleGallery
                 title={`${vehicle.year} ${vehicle.make} ${vehicle.model}`}
                 images={
                   vehicle.images.length > 0
-                    ? vehicle.images
+                    ? vehicle.images.map(img => getOptimizedImage(img, 'large'))
                     : ['/placeholder-vehicle.jpg']
                 }
                 badge={

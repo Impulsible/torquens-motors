@@ -3,6 +3,7 @@ import { Cormorant_Garamond, Plus_Jakarta_Sans } from 'next/font/google';
 import { Layout } from '../components/layout/Layout';
 import { ComparisonProvider } from '@/contexts/ComparisonContext';
 import { AuthProvider } from '@/components/providers/AuthProvider';
+import { ToastProvider } from '@/hooks/useToast';
 import './globals.css';
 
 // -----------------------------------------------------------------------------
@@ -116,14 +117,18 @@ export default function RootLayout({ children }: RootLayoutProps) {
           Skip to main content
         </a>
 
-        {/* ✅ Wrap with AuthProvider for NextAuth useSession() and ComparisonProvider for comparison context */}
-        <AuthProvider>
-          <ComparisonProvider>
-            <Layout>
-              {children}
-            </Layout>
-          </ComparisonProvider>
-        </AuthProvider>
+        {/* ✅ ToastProvider must be at the root level to be available everywhere */}
+        <ToastProvider>
+          {/* ✅ AuthProvider for NextAuth useSession() */}
+          <AuthProvider>
+            {/* ✅ ComparisonProvider for comparison context */}
+            <ComparisonProvider>
+              <Layout>
+                {children}
+              </Layout>
+            </ComparisonProvider>
+          </AuthProvider>
+        </ToastProvider>
 
         {/* Floating Global UI Anchors (Notifications, Compare Tray, Modals) */}
         <div id="toast-portal" />

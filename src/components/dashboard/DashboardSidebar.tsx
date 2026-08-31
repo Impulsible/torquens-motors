@@ -2,7 +2,7 @@
 /* eslint-disable @next/next/no-img-element */
 'use client';
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { signOut } from 'next-auth/react';
@@ -21,6 +21,7 @@ import {
 
 import { cn } from '@/utils/cn';
 import { useProfile } from '@/contexts/ProfileContext';
+import { getSavedVehicles } from '@/actions/saved-vehicles';
 
 interface DashboardSidebarProps {
   isMobile?: boolean;
@@ -32,7 +33,7 @@ const navigationSections = [
     title: 'Asset Allocation',
     items: [
       { label: 'Vault Overview', href: '/dashboard', icon: LayoutDashboard },
-      { label: 'Saved Vehicles', href: '/dashboard/saved', icon: BookmarkCheck, badge: '4' },
+      { label: 'Saved Vehicles', href: '/dashboard/saved', icon: BookmarkCheck, showBadge: true },
       { label: 'Direct Inquiries', href: '/dashboard/enquiries', icon: Headphones },
     ],
   },
@@ -53,8 +54,49 @@ const navigationSections = [
 
 export function DashboardSidebar({ isMobile = false, onClose }: DashboardSidebarProps) {
   const pathname = usePathname();
-  const { profile } = useProfile();
+  const { profile, isLoading: profileLoading } = useProfile();
   const [isLoggingOut, setIsLoggingOut] = useState(false);
+  const [savedCount, setSavedCount] = useState<number>(0);
+  const [isLoadingCount, setIsLoadingCount] = useState(true);
+
+  // Fetch saved vehicles count
+  useEffect(() => {
+    const fetchSavedCount = async () => {
+      // Don't fetch if profile is still loading or not available
+      if (profileLoading) {
+        return;
+      }
+
+      // If no profile (user not logged in), set count to 0 and stop loading
+      if (!profile?.id) {
+        setSavedCount(0);
+        setIsLoadingCount(false);
+        return;
+      }
+
+      try {
+        setIsLoadingCount(true);
+        console.log('Fetching saved vehicles count for user:', profile.id);
+        
+        const result = await getSavedVehicles();
+        console.log('Saved vehicles result:', result);
+        
+        if (result.success) {
+          setSavedCount(result.data.length);
+        } else {
+          console.warn('Failed to fetch saved vehicles:', result.message);
+          setSavedCount(0);
+        }
+      } catch (error) {
+        console.error('Error fetching saved count:', error);
+        setSavedCount(0);
+      } finally {
+        setIsLoadingCount(false);
+      }
+    };
+
+    fetchSavedCount();
+  }, [profile?.id, profileLoading]);
 
   // ---------------------------------------------------------------------------
   // RELIABLE CLIENT-SIDE SIGN OUT
@@ -117,6 +159,16 @@ export function DashboardSidebar({ isMobile = false, onClose }: DashboardSidebar
                 {section.items.map((item) => {
                   const isActive = pathname === item.href;
                   const Icon = item.icon;
+                  
+                  // Determine badge content for Saved Vehicles
+                  let badgeContent = null;
+                  if (item.showBadge) {
+                    if (isLoadingCount) {
+                      badgeContent = '...';
+                    } else {
+                      badgeContent = savedCount > 0 ? savedCount.toString() : '0';
+                    }
+                  }
 
                   return (
                     <Link
@@ -140,16 +192,21 @@ export function DashboardSidebar({ isMobile = false, onClose }: DashboardSidebar
                         <span>{item.label}</span>
                       </div>
 
-                      {item.badge && (
+                      {/* Show badge with actual count or loading state */}
+                      {item.showBadge && (
                         <span
                           className={cn(
-                            'text-[10px] font-mono px-1.5 py-0.5 rounded',
-                            isActive
-                              ? 'bg-gold text-obsidian font-semibold'
-                              : 'bg-charcoal text-muted border border-border/80'
+                            'text-[10px] font-mono px-1.5 py-0.5 rounded min-w-5 text-center transition-all',
+                            isLoadingCount
+                              ? 'bg-charcoal/50 text-muted/50 animate-pulse'
+                              : savedCount > 0
+                              ? isActive
+                                ? 'bg-gold text-obsidian font-semibold'
+                                : 'bg-charcoal text-muted border border-border/80'
+                              : 'bg-charcoal/30 text-muted/40 border border-border/40'
                           )}
                         >
-                          {item.badge}
+                          {badgeContent}
                         </span>
                       )}
                     </Link>
