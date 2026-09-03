@@ -5,9 +5,15 @@ let initialized = false;
 
 /**
  * Initialize all configured APIs
- * Call this once during app startup
+ * Call this once during app startup (server-side only)
  */
 export function initializeAPIs(): void {
+  // Only run on server
+  if (typeof window !== 'undefined') {
+    console.log('⚠️ [TORQUENS] API initialization skipped (client-side)');
+    return;
+  }
+
   if (initialized) {
     console.log('⚠️ [TORQUENS] APIs already initialized');
     return;

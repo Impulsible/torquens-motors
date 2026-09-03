@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-require-imports */
 import type { Metadata } from 'next';
 import { Cormorant_Garamond, Plus_Jakarta_Sans } from 'next/font/google';
 import { Layout } from '../components/layout/Layout';
@@ -94,6 +95,21 @@ export const metadata: Metadata = {
   },
   manifest: '/site.webmanifest',
 };
+
+// -----------------------------------------------------------------------------
+// SERVER-ONLY INITIALIZATION
+// -----------------------------------------------------------------------------
+// Only run server-side initialization on the server
+if (typeof window === 'undefined') {
+  try {
+    // Dynamically import server-only modules
+    const { initializeAPIs } = require('@/lib/initialize-apis');
+    initializeAPIs();
+    console.log('✅ Server-side APIs initialized');
+  } catch (error) {
+    console.warn('⚠️ Failed to initialize server-side APIs:', error);
+  }
+}
 
 // -----------------------------------------------------------------------------
 // ROOT LAYOUT COMPONENT
