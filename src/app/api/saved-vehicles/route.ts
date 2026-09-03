@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getServerSession } from 'next-auth';
 import { authConfig } from '@/auth/config';
-import { SavedVehicleService } from '@/services/saved-vehicle.service';
+import * as SavedVehicleService from '@/services/saved-vehicle.service';
 
 // GET /api/saved-vehicles - Get all saved vehicles for the current user
 export async function GET(request: NextRequest) {
@@ -93,7 +93,10 @@ export async function DELETE(request: NextRequest) {
 
     await SavedVehicleService.removeSavedVehicle(session.user.id, vehicleId);
 
-    return NextResponse.json({ success: true, message: 'Vehicle removed from saved' });
+    return NextResponse.json({ 
+      success: true, 
+      message: 'Vehicle removed from saved' 
+    });
   } catch (error) {
     console.error('Error removing saved vehicle:', error);
     return NextResponse.json(

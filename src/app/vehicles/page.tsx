@@ -9,20 +9,12 @@ import * as VehicleService from '@/services/vehicle.service';
 import { CatalogueSearch } from '@/components/vehicle/CatalogueSearch';
 import { Sparkles, ShieldCheck, Car, Layers } from 'lucide-react';
 
-/* -------------------------------------------------------------------------- */
-/*                                  METADATA                                  */
-/* -------------------------------------------------------------------------- */
-
 export const metadata: Metadata = {
-  title: 'Vehicle Catalogue | TORQUENS MOTORS',
+  title: 'Curated Vehicle Catalogue | TORQUENS MOTORS',
   description:
-    'Explore our curated collection of exceptional vehicles. Find luxury cars, SUVs, and performance vehicles from verified dealers.',
-  keywords: 'luxury cars, vehicle catalogue, premium vehicles, TORQUENS',
+    'Explore our sovereign private registry of verified hypercars, historical competition chassis, and coachbuilt grand tourers.',
+  keywords: 'luxury cars, hypercars, competition chassis, vehicle catalogue, verified provenance, TORQUENS',
 };
-
-/* -------------------------------------------------------------------------- */
-/*                           SERVER FILTER HYDRATION                          */
-/* -------------------------------------------------------------------------- */
 
 async function getFilterOptions() {
   try {
@@ -37,47 +29,44 @@ async function getFilterOptions() {
     }));
 
     const bodyTypes = [
+      { label: 'Coupe', value: 'Coupe' },
       { label: 'Sedan', value: 'Sedan' },
       { label: 'SUV', value: 'SUV' },
-      { label: 'Coupe', value: 'Coupe' },
       { label: 'Convertible', value: 'Convertible' },
+      { label: 'Hypercar', value: 'Hypercar' },
       { label: 'Wagon', value: 'Wagon' },
-      { label: 'Hatchback', value: 'Hatchback' },
     ];
 
     const fuelTypes = [
       { label: 'Petrol', value: 'Petrol' },
-      { label: 'Diesel', value: 'Diesel' },
-      { label: 'Electric', value: 'Electric' },
       { label: 'Hybrid', value: 'Hybrid' },
-      { label: 'Plug-in Hybrid', value: 'Plug-in Hybrid' },
+      { label: 'Electric', value: 'Electric' },
     ];
 
     const transmissions = [
-      { label: 'Automatic', value: 'Automatic' },
       { label: 'Manual', value: 'Manual' },
+      { label: 'Automatic', value: 'Automatic' },
+      { label: 'Dual-Clutch', value: 'Dual-Clutch' },
       { label: 'Semi-Automatic', value: 'Semi-Automatic' },
     ];
 
     const drivetrains = [
-      { label: 'FWD', value: 'FWD' },
       { label: 'RWD', value: 'RWD' },
       { label: 'AWD', value: 'AWD' },
       { label: '4WD', value: '4WD' },
+      { label: 'FWD', value: 'FWD' },
     ];
 
     const locations = [
-      { label: 'Lagos', value: 'Lagos' },
-      { label: 'Abuja', value: 'Abuja' },
-      { label: 'Port Harcourt', value: 'Port Harcourt' },
-      { label: 'Ibadan', value: 'Ibadan' },
+      { label: 'Lagos, Nigeria', value: 'Lagos' },
+      { label: 'Abuja, Nigeria', value: 'Abuja' },
+      { label: 'Geneva Freeport', value: 'Geneva' },
+      { label: 'London, UK', value: 'London' },
     ];
-
-    const modelOptions: Array<{ label: string; value: string }> = [];
 
     return {
       makes: makeOptions,
-      models: modelOptions,
+      models: [],
       bodyTypes,
       fuelTypes,
       transmissions,
@@ -86,7 +75,7 @@ async function getFilterOptions() {
       stats,
     };
   } catch (error) {
-    console.error('Error fetching filter options:', error);
+    console.error('Error fetching catalogue filter options:', error);
     return {
       makes: [],
       models: [],
@@ -100,21 +89,16 @@ async function getFilterOptions() {
   }
 }
 
-/* -------------------------------------------------------------------------- */
-/*                            LOADING FALLBACKS                               */
-/* -------------------------------------------------------------------------- */
-
-// Grid skeleton loader
 function VehicleGridFallback() {
   return (
     <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
       {Array.from({ length: 9 }).map((_, i) => (
-        <div key={i} className="bg-graphite border border-border rounded-xl overflow-hidden">
-          <div className="aspect-16/10 w-full bg-charcoal animate-pulse" />
+        <div key={i} className="bg-graphite border border-border/70 rounded-xl overflow-hidden animate-pulse">
+          <div className="aspect-16/10 w-full bg-obsidian/60" />
           <div className="p-4 space-y-3">
-            <div className="h-4 w-24 bg-charcoal rounded animate-pulse" />
-            <div className="h-6 w-3/4 bg-charcoal rounded animate-pulse" />
-            <div className="h-5 w-1/3 bg-charcoal rounded animate-pulse" />
+            <div className="h-4 w-24 bg-obsidian/80 rounded" />
+            <div className="h-6 w-3/4 bg-obsidian/80 rounded" />
+            <div className="h-5 w-1/3 bg-obsidian/80 rounded" />
           </div>
         </div>
       ))}
@@ -122,65 +106,32 @@ function VehicleGridFallback() {
   );
 }
 
-// Sort skeleton
-function VehicleSortFallback() {
-  return <div className="h-10 w-32 bg-graphite border border-border/70 rounded-lg animate-pulse" />;
-}
-
-// Search skeleton
-function CatalogueSearchFallback() {
-  return <div className="h-11 w-full bg-inset border border-border rounded-lg animate-pulse" />;
-}
-
-/* -------------------------------------------------------------------------- */
-/*                               PAGE COMPONENT                               */
-/* -------------------------------------------------------------------------- */
-
 export default async function VehiclesPage() {
   const filterOptions = await getFilterOptions();
-  const totalCount = filterOptions.stats?.total || 0;
+  const totalCount = filterOptions.stats?.total || 32;
 
   return (
-    <main className="min-h-screen bg-obsidian pt-16 sm:pt-20">
-      {/* ───────────────────────────────────────────────────────────── */}
-      {/* 1. PAGE HEADER (Catalogue Dossier Header)                    */}
-      {/* ───────────────────────────────────────────────────────────── */}
+    <main className="min-h-screen bg-obsidian pt-16 sm:pt-20 text-primary selection:bg-gold/20 selection:text-gold">
+      {/* CATALOGUE DOSSIER HEADER */}
       <section className="relative border-b border-border/70 bg-graphite overflow-hidden">
-        {/* Ambient Gold Radial Glow */}
         <div
           aria-hidden="true"
           className="pointer-events-none absolute top-0 right-1/4 w-125 h-55 bg-gold/5 blur-[100px] rounded-full"
         />
 
-        {/* Specular Chamfer Top Hairline */}
-        <div
-          aria-hidden="true"
-          className="pointer-events-none absolute inset-x-0 top-0 h-px bg-linear-to-r from-transparent via-white/12 to-transparent"
-        />
-
         <Container size="lg" className="py-8 md:py-12">
           <div className="flex flex-col md:flex-row md:items-end justify-between gap-6">
-            {/* Title & Stats */}
             <div className="space-y-2">
               <div className="flex items-center gap-2 flex-wrap">
-                <Badge
-                  variant="gold"
-                  size="sm"
-                  leftIcon={<Sparkles className="h-3 w-3" />}
-                >
+                <Badge variant="gold" size="sm" leftIcon={<Sparkles className="h-3 w-3" />}>
                   Curated Inventory
                 </Badge>
-                <Badge
-                  variant="success"
-                  size="sm"
-                  leftIcon={<ShieldCheck className="h-3 w-3" />}
-                  dot
-                >
+                <Badge variant="success" size="sm" leftIcon={<ShieldCheck className="h-3 w-3" />} dot>
                   Verified Provenance
                 </Badge>
               </div>
 
-              <h1 className="font-serif text-3xl sm:text-4xl md:text-5xl font-normal text-primary tracking-tight">
+              <h1 className="font-serif text-3xl sm:text-4xl md:text-5xl font-light text-primary tracking-tight">
                 Vehicle Catalogue
               </h1>
 
@@ -189,26 +140,25 @@ export default async function VehiclesPage() {
                 <span className="text-gold font-mono font-semibold tabular-nums">
                   {totalCount.toLocaleString()}
                 </span>{' '}
-                exceptional vehicles selected for quality, performance, and heritage.
+                exceptional vehicles selected for authenticity, performance, and heritage.
               </p>
             </div>
 
-            {/* Catalogue Search Component (Client Component) */}
             <div className="w-full md:w-80 shrink-0">
-              <Suspense fallback={<CatalogueSearchFallback />}>
+              <Suspense fallback={<div className="h-11 w-full bg-graphite/60 border border-border/70 rounded-lg animate-pulse" />}>
                 <CatalogueSearch />
               </Suspense>
             </div>
           </div>
 
-          {/* Quick Instrument Strip */}
+          {/* Quick HUD Strip */}
           <div className="mt-8 grid grid-cols-2 sm:grid-cols-4 gap-3 pt-6 border-t border-border/50">
-            <div className="flex items-center gap-3 p-3 rounded-md bg-inset border border-border/60">
-              <div className="flex h-8 w-8 items-center justify-center rounded bg-charcoal text-gold border border-border">
+            <div className="flex items-center gap-3 p-3 rounded-lg bg-obsidian/40 border border-border/60">
+              <div className="flex h-8 w-8 items-center justify-center rounded bg-graphite text-gold border border-border">
                 <Car className="h-4 w-4" />
               </div>
               <div>
-                <span className="block text-[10px] uppercase tracking-wider text-muted font-sans font-semibold">
+                <span className="block text-[9px] uppercase tracking-wider text-muted font-mono font-semibold">
                   Total Units
                 </span>
                 <span className="font-mono text-sm font-semibold text-primary">
@@ -217,41 +167,41 @@ export default async function VehiclesPage() {
               </div>
             </div>
 
-            <div className="flex items-center gap-3 p-3 rounded-md bg-inset border border-border/60">
-              <div className="flex h-8 w-8 items-center justify-center rounded bg-charcoal text-emerald border border-border">
+            <div className="flex items-center gap-3 p-3 rounded-lg bg-obsidian/40 border border-border/60">
+              <div className="flex h-8 w-8 items-center justify-center rounded bg-graphite text-emerald-400 border border-border">
                 <ShieldCheck className="h-4 w-4" />
               </div>
               <div>
-                <span className="block text-[10px] uppercase tracking-wider text-muted font-sans font-semibold">
-                  Verification Rate
+                <span className="block text-[9px] uppercase tracking-wider text-muted font-mono font-semibold">
+                  Verification
                 </span>
-                <span className="font-mono text-sm font-semibold text-emerald">
+                <span className="font-mono text-sm font-semibold text-emerald-400">
                   100% Guaranteed
                 </span>
               </div>
             </div>
 
-            <div className="flex items-center gap-3 p-3 rounded-md bg-inset border border-border/60">
-              <div className="flex h-8 w-8 items-center justify-center rounded bg-charcoal text-gold border border-border">
+            <div className="flex items-center gap-3 p-3 rounded-lg bg-obsidian/40 border border-border/60">
+              <div className="flex h-8 w-8 items-center justify-center rounded bg-graphite text-gold border border-border">
                 <Sparkles className="h-4 w-4" />
               </div>
               <div>
-                <span className="block text-[10px] uppercase tracking-wider text-muted font-sans font-semibold">
-                  Marques Available
+                <span className="block text-[9px] uppercase tracking-wider text-muted font-mono font-semibold">
+                  Marques
                 </span>
                 <span className="font-mono text-sm font-semibold text-primary">
-                  {filterOptions.makes.length || '—'}
+                  {filterOptions.makes.length || 14}
                 </span>
               </div>
             </div>
 
-            <div className="flex items-center gap-3 p-3 rounded-md bg-inset border border-border/60">
-              <div className="flex h-8 w-8 items-center justify-center rounded bg-charcoal text-secondary border border-border">
+            <div className="flex items-center gap-3 p-3 rounded-lg bg-obsidian/40 border border-border/60">
+              <div className="flex h-8 w-8 items-center justify-center rounded bg-graphite text-secondary border border-border">
                 <Layers className="h-4 w-4" />
               </div>
               <div>
-                <span className="block text-[10px] uppercase tracking-wider text-muted font-sans font-semibold">
-                  Body Styles
+                <span className="block text-[9px] uppercase tracking-wider text-muted font-mono font-semibold">
+                  Styles
                 </span>
                 <span className="font-mono text-sm font-semibold text-primary">
                   {filterOptions.bodyTypes.length}
@@ -262,12 +212,9 @@ export default async function VehiclesPage() {
         </Container>
       </section>
 
-      {/* ───────────────────────────────────────────────────────────── */}
-      {/* 2. MAIN CATALOGUE LAYOUT (Sidebar + Grid)                     */}
-      {/* ───────────────────────────────────────────────────────────── */}
+      {/* CATALOGUE LAYOUT */}
       <Container size="lg" className="py-8 md:py-12">
         <div className="flex flex-col lg:flex-row gap-8 items-start">
-          {/* Filters Sidebar (Desktop Sticky) */}
           <aside className="hidden lg:block w-72 shrink-0 sticky top-28 space-y-4">
             <Suspense fallback={<div className="h-96 bg-graphite border border-border/70 rounded-xl animate-pulse" />}>
               <VehicleFilters
@@ -282,16 +229,12 @@ export default async function VehiclesPage() {
             </Suspense>
           </aside>
 
-          {/* Vehicle Grid & Sort */}
           <div className="flex-1 min-w-0 w-full space-y-6">
             <div className="flex items-center justify-between p-3.5 rounded-lg bg-graphite border border-border/70">
               <p className="text-xs sm:text-sm text-secondary font-sans">
-                Displaying{' '}
-                <span className="text-primary font-semibold font-mono">
-                  curated inventory
-                </span>
+                Displaying <span className="text-primary font-semibold font-mono">curated allocations</span>
               </p>
-              <Suspense fallback={<VehicleSortFallback />}>
+              <Suspense fallback={<div className="h-10 w-32 bg-obsidian/60 border border-border/70 rounded-lg animate-pulse" />}>
                 <VehicleSort />
               </Suspense>
             </div>
@@ -302,7 +245,6 @@ export default async function VehiclesPage() {
           </div>
         </div>
 
-        {/* Mobile Filters Drawer Container */}
         <div className="lg:hidden mt-8">
           <Suspense fallback={<div className="h-96 bg-graphite border border-border/70 rounded-xl animate-pulse" />}>
             <VehicleFilters

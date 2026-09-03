@@ -12,11 +12,13 @@ const MessageSchema = new Schema<IMessageDocument>(
       type: Schema.Types.ObjectId,
       ref: 'User',
       required: true,
+      index: true,
     },
     receiver: {
       type: Schema.Types.ObjectId,
       ref: 'User',
       required: true,
+      index: true,
     },
     content: {
       type: String,
@@ -26,6 +28,7 @@ const MessageSchema = new Schema<IMessageDocument>(
     read: {
       type: Boolean,
       default: false,
+      index: true,
     },
     readAt: {
       type: Date,
@@ -39,6 +42,22 @@ const MessageSchema = new Schema<IMessageDocument>(
   },
   {
     timestamps: true,
+    toJSON: {
+      transform: function(_, ret) {
+        ret.id = ret._id.toString();
+        delete ret._id;
+        delete ret.__v;
+        return ret;
+      },
+    },
+    toObject: {
+      transform: function(_, ret) {
+        ret.id = ret._id.toString();
+        delete ret._id;
+        delete ret.__v;
+        return ret;
+      },
+    },
   }
 );
 
@@ -66,5 +85,14 @@ MessageSchema.statics.markAsRead = async function(messageId: string) {
   );
 };
 
-export const Message: Model<IMessageDocument> = 
-  mongoose.models.Message || mongoose.model<IMessageDocument>('Message', MessageSchema);
+// ✅ Safe model creation
+let Message: Model<IMessageDocument>;
+
+try {
+  Message = mongoose.model<IMessageDocument>('Message');
+} catch {
+  Message = mongoose.model<IMessageDocument>('Message', MessageSchema);
+}
+
+export { Message };
+export default Message;

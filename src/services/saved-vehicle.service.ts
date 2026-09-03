@@ -3,16 +3,8 @@
 import { SavedVehicle } from '@/models/SavedVehicle';
 import { Vehicle } from '@/models/Vehicle';
 import type { IVehicle } from '@/types';
-import {
-  findMany,
-  findOne,
-  create,
-  update,
-  deleteOne,
-  exists,
-  count,
-  aggregate,
-} from './database';
+import { connectToDatabase } from '@/lib/mongodb';
+import * as VehicleService from '@/services/vehicle.service';
 
 export interface SavedVehicleWithDetails {
   id: string;
@@ -22,253 +14,211 @@ export interface SavedVehicleWithDetails {
   updatedAt: Date;
 }
 
-/**
- * Helper function to convert Mongoose document to IVehicle
- */
-function toIVehicle(doc: any): IVehicle {
-  return {
-    id: doc._id?.toString() || doc.id || '',
-    slug: doc.slug || '',
-    make: doc.make || '',
-    model: doc.model || '',
-    year: doc.year || 0,
-    price: doc.price || 0,
-    currency: doc.currency || 'NGN',
-    mileage: doc.mileage || 0,
-    images: doc.images || [],
-    transmission: doc.transmission || 'Automatic',
-    fuelType: doc.fuelType || 'Petrol',
-    verified: doc.verified === 'VERIFIED' || doc.verified === true,
-    status: doc.status || 'AVAILABLE',
-    location: doc.location || 'Lagos',
-    power: typeof doc.power === 'number' ? doc.power : parseInt(doc.power) || 0,
-    savedCount: doc.savedCount || 0,
-    createdAt: doc.createdAt || new Date(),
-    updatedAt: doc.updatedAt || new Date(),
-  };
+export async function getSavedVehicles(userId: string): Promise<SavedVehicleWithDetails[]> {
+  try {
+    await connectToDatabase();
+    const cleanUser = String(userId).trim();
+
+    const saved = await SavedVehicle.find({ user: cleanUser })
+      .sort({ savedAt: -1 })
+      .lean();
+
+    const items = await Promise.all(
+      saved.map(async (item: any) => {
+        const vehicleId = String(item.vehicle || '').trim();
+        const vehicleObj = await VehicleService.getVehicleById(vehicleId);
+        if (!vehicleObj) return null;
+
+        return {
+          id: item._id?.toString() || item.id,
+          vehicle: vehicleObj,
+          savedAt: item.savedAt || item.createdAt || new Date(),
+          createdAt: item.createdAt || new Date(),
+          updatedAt: item.updatedAt || new Date(),
+        };
+      })
+    );
+
+    return items.filter(Boolean) as SavedVehicleWithDetails[];
+  } catch (error) {
+    console.error('[SavedVehicleService] getSavedVehicles error:', error);
+    return [];
+  }
 }
 
-export class SavedVehicleService {
-  /**
-   * Get all saved vehicles for a user
-   */
-  static async getSavedVehicles(userId: string): Promise<SavedVehicleWithDetails[]> {
-    const saved = await findMany<any>(
-      SavedVehicle as any,
-      { user: userId },
-      undefined,
-      { lean: true }
-    );
+export async function isSaved(userId: string, vehicleId: string): Promise<boolean> {
+  try {
+    await connectToDatabase();
+    const cleanUser = String(userId).trim();
+    const cleanVehicle = String(vehicleId).trim();
 
-    // Populate vehicle data manually
-    const populated = await Promise.all(
-      saved.map(async (item: any) => {
-        const vehicleDoc = await findOne<any>(
-          Vehicle as any,
-          { _id: item.vehicle },
-          undefined,
-          { lean: true }
-        );
-        
-        const vehicle = vehicleDoc ? toIVehicle(vehicleDoc) : null as any;
-
-        return {
-          id: item._id?.toString() || item.id,
-          vehicle,
-          savedAt: item.savedAt || item.createdAt,
-          createdAt: item.createdAt,
-          updatedAt: item.updatedAt,
-        };
-      })
-    );
-
-    return populated;
-  }
-
-  /**
-   * Check if a vehicle is saved by a user
-   */
-  static async isSaved(userId: string, vehicleId: string): Promise<boolean> {
-    return exists(SavedVehicle as any, {
-      user: userId,
-      vehicle: vehicleId,
+    const exists = await SavedVehicle.exists({
+      user: cleanUser,
+      vehicle: cleanVehicle,
     });
+    return !!exists;
+  } catch (error) {
+    console.error('[SavedVehicleService] isSaved error:', error);
+    return false;
   }
+}
 
-  /**
-   * Toggle save status for a vehicle
-   */
-  static async toggleSave(userId: string, vehicleId: string): Promise<{
-    saved: boolean;
-    action: 'added' | 'removed';
-  }> {
-    const existing = await findOne<any>(
-      SavedVehicle as any,
-      {
-        user: userId,
-        vehicle: vehicleId,
+export async function toggleSave(
+  userId: string,
+  vehicleId: string
+): Promise<{
+  saved: boolean;
+  action: 'added' | 'removed';
+}> {
+  try {
+    await connectToDatabase();
+    const cleanUser = String(userId).trim();
+    const cleanVehicle = String(vehicleId).trim();
+    const isObjectId = /^[0-9a-fA-F]{24}$/.test(cleanVehicle);
+
+    const existing = await SavedVehicle.findOne({
+      user: cleanUser,
+      vehicle: cleanVehicle,
+    });
+
+    if (existing) {
+      await SavedVehicle.deleteOne({ _id: existing._id });
+      if (isObjectId) {
+        await Vehicle.findByIdAndUpdate(cleanVehicle, {
+          $inc: { savedCount: -1 },
+        }).catch(() => {});
+      } else {
+        await Vehicle.updateOne(
+          { $or: [{ id: cleanVehicle }, { slug: cleanVehicle }] },
+          { $inc: { savedCount: -1 } }
+        ).catch(() => {});
       }
-    );
-
-    if (existing && existing._id) {
-      // Remove from saved
-      await deleteOne(SavedVehicle as any, { _id: existing._id });
-      
-      // Decrement saved count on vehicle
-      await update(
-        Vehicle as any,
-        { _id: vehicleId },
-        { $inc: { savedCount: -1 } }
-      );
-
       return { saved: false, action: 'removed' };
     } else {
-      // Add to saved
-      await create(SavedVehicle as any, {
-        user: userId,
-        vehicle: vehicleId,
+      await SavedVehicle.create({
+        user: cleanUser,
+        vehicle: cleanVehicle,
         savedAt: new Date(),
       });
-
-      // Increment saved count on vehicle
-      await update(
-        Vehicle as any,
-        { _id: vehicleId },
-        { $inc: { savedCount: 1 } }
-      );
-
+      if (isObjectId) {
+        await Vehicle.findByIdAndUpdate(cleanVehicle, {
+          $inc: { savedCount: 1 },
+        }).catch(() => {});
+      } else {
+        await Vehicle.updateOne(
+          { $or: [{ id: cleanVehicle }, { slug: cleanVehicle }] },
+          { $inc: { savedCount: 1 } }
+        ).catch(() => {});
+      }
       return { saved: true, action: 'added' };
     }
+  } catch (error) {
+    console.error('[SavedVehicleService] toggleSave error:', error);
+    throw new Error(
+      `Failed to toggle save: ${error instanceof Error ? error.message : 'Unknown error'}`
+    );
   }
+}
 
-  /**
-   * Remove a vehicle from saved
-   */
-  static async removeSavedVehicle(userId: string, vehicleId: string): Promise<void> {
-    const saved = await findOne<any>(
-      SavedVehicle as any,
-      {
-        user: userId,
-        vehicle: vehicleId,
+export async function removeSavedVehicle(userId: string, vehicleId: string): Promise<void> {
+  try {
+    await connectToDatabase();
+    const cleanUser = String(userId).trim();
+    const cleanVehicle = String(vehicleId).trim();
+    const isObjectId = /^[0-9a-fA-F]{24}$/.test(cleanVehicle);
+
+    const saved = await SavedVehicle.findOne({
+      user: cleanUser,
+      vehicle: cleanVehicle,
+    });
+
+    if (saved) {
+      await SavedVehicle.deleteOne({ _id: saved._id });
+      if (isObjectId) {
+        await Vehicle.findByIdAndUpdate(cleanVehicle, {
+          $inc: { savedCount: -1 },
+        }).catch(() => {});
+      } else {
+        await Vehicle.updateOne(
+          { $or: [{ id: cleanVehicle }, { slug: cleanVehicle }] },
+          { $inc: { savedCount: -1 } }
+        ).catch(() => {});
       }
-    );
-
-    if (saved && saved._id) {
-      await deleteOne(SavedVehicle as any, { _id: saved._id });
-      
-      // Decrement saved count on vehicle
-      await update(
-        Vehicle as any,
-        { _id: vehicleId },
-        { $inc: { savedCount: -1 } }
-      );
     }
-  }
-
-  /**
-   * Get saved count for a vehicle
-   */
-  static async getSavedCount(vehicleId: string): Promise<number> {
-    return count(SavedVehicle as any, { vehicle: vehicleId });
-  }
-
-  /**
-   * Get most saved vehicles
-   */
-  static async getMostSavedVehicles(limit: number = 10): Promise<IVehicle[]> {
-    const results = await aggregate<any>(
-      SavedVehicle as any,
-      [
-        {
-          $group: {
-            _id: '$vehicle',
-            count: { $sum: 1 },
-          },
-        },
-        { $sort: { count: -1 } },
-        { $limit: limit },
-        {
-          $lookup: {
-            from: 'vehicles',
-            localField: '_id',
-            foreignField: '_id',
-            as: 'vehicle',
-          },
-        },
-        { $unwind: '$vehicle' },
-        {
-          $replaceRoot: {
-            newRoot: '$vehicle',
-          },
-        },
-      ]
+  } catch (error) {
+    console.error('[SavedVehicleService] removeSavedVehicle error:', error);
+    throw new Error(
+      `Failed to remove saved vehicle: ${error instanceof Error ? error.message : 'Unknown error'}`
     );
-
-    // Convert results to IVehicle array using the helper
-    return (results as any[]).map((doc: any) => toIVehicle(doc));
   }
+}
 
-  /**
-   * Get saved vehicles with pagination
-   */
-  static async getSavedVehiclesPaginated(
-    userId: string,
-    page: number = 1,
-    limit: number = 12
-  ): Promise<{
-    data: SavedVehicleWithDetails[];
-    pagination: {
-      total: number;
-      page: number;
-      limit: number;
-      totalPages: number;
-      hasNextPage: boolean;
-      hasPrevPage: boolean;
-    };
-  }> {
-    const skip = (page - 1) * limit;
+export async function getSavedCount(vehicleId: string): Promise<number> {
+  try {
+    await connectToDatabase();
+    const cleanVehicle = String(vehicleId).trim();
+    return await SavedVehicle.countDocuments({ vehicle: cleanVehicle });
+  } catch (error) {
+    console.error('[SavedVehicleService] getSavedCount error:', error);
+    return 0;
+  }
+}
 
-    const [saved, total] = await Promise.all([
-      findMany<any>(
-        SavedVehicle as any,
-        { user: userId },
-        undefined,
-        {
-          lean: true,
-          skip,
-          limit,
-          sort: { savedAt: -1 },
-        }
-      ),
-      count(SavedVehicle as any, { user: userId }),
+export async function getMostSavedVehicles(limit: number = 10): Promise<IVehicle[]> {
+  try {
+    await connectToDatabase();
+
+    const results = await SavedVehicle.aggregate([
+      {
+        $group: {
+          _id: '$vehicle',
+          count: { $sum: 1 },
+        },
+      },
+      { $sort: { count: -1 } },
+      { $limit: limit },
     ]);
 
-    // Populate vehicle data for each saved item
-    const data = await Promise.all(
-      saved.map(async (item: any) => {
-        const vehicleDoc = await findOne<any>(
-          Vehicle as any,
-          { _id: item.vehicle },
-          undefined,
-          { lean: true }
-        );
-        
-        const vehicle = vehicleDoc ? toIVehicle(vehicleDoc) : null as any;
-
-        return {
-          id: item._id?.toString() || item.id,
-          vehicle,
-          savedAt: item.savedAt || item.createdAt,
-          createdAt: item.createdAt,
-          updatedAt: item.updatedAt,
-        };
+    const vehicles = await Promise.all(
+      results.map(async (res) => {
+        const vId = String(res._id || '').trim();
+        return await VehicleService.getVehicleById(vId);
       })
     );
 
-    const totalPages = Math.ceil(total / limit);
+    return vehicles.filter(Boolean) as IVehicle[];
+  } catch (error) {
+    console.error('[SavedVehicleService] getMostSavedVehicles error:', error);
+    return [];
+  }
+}
+
+export async function getSavedVehiclesPaginated(
+  userId: string,
+  page: number = 1,
+  limit: number = 12
+): Promise<{
+  data: SavedVehicleWithDetails[];
+  vehicles: IVehicle[];
+  pagination: {
+    total: number;
+    page: number;
+    limit: number;
+    totalPages: number;
+    hasNextPage: boolean;
+    hasPrevPage: boolean;
+  };
+}> {
+  try {
+    const allSaved = await getSavedVehicles(userId);
+    const total = allSaved.length;
+    const skip = (page - 1) * limit;
+    const paginatedData = allSaved.slice(skip, skip + limit);
+    const totalPages = Math.max(1, Math.ceil(total / limit));
 
     return {
-      data,
+      data: paginatedData,
+      vehicles: paginatedData.map((d) => d.vehicle),
       pagination: {
         total,
         page,
@@ -278,8 +228,19 @@ export class SavedVehicleService {
         hasPrevPage: page > 1,
       },
     };
+  } catch (error) {
+    console.error('[SavedVehicleService] getSavedVehiclesPaginated error:', error);
+    return {
+      data: [],
+      vehicles: [],
+      pagination: {
+        total: 0,
+        page,
+        limit,
+        totalPages: 1,
+        hasNextPage: false,
+        hasPrevPage: false,
+      },
+    };
   }
 }
-
-// Export default for convenience
-export default SavedVehicleService;

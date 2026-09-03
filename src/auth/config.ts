@@ -175,7 +175,7 @@ export const authConfig: NextAuthOptions = {
       return session;
     },
   },
-  // Supports BOTH NEXTAUTH_SECRET and AUTH_SECRET in Vercel
+  // ✅ Supports BOTH NEXTAUTH_SECRET and AUTH_SECRET in Vercel
   secret: process.env.NEXTAUTH_SECRET || process.env.AUTH_SECRET,
   debug: process.env.NODE_ENV === "development",
 };

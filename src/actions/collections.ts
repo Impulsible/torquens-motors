@@ -1,354 +1,334 @@
-/* eslint-disable @typescript-eslint/no-unused-vars */
 /* eslint-disable @typescript-eslint/no-explicit-any */
-// src/actions/collections.ts
 'use server';
 
 import { getServerSession } from 'next-auth';
 import { authConfig } from '@/auth/config';
-import { redirect } from 'next/navigation';
-import { CollectionService, CreateCollectionData } from '@/services/collection.service';
+import {
+  CollectionService,
+  type CreateCollectionData,
+} from '@/services/collection.service';
 import { revalidatePath } from 'next/cache';
 
-// ─────────────────────────────────────────────────────────────
-// GET COLLECTIONS
-// ─────────────────────────────────────────────────────────────
+export interface ActionResponse<T = undefined> {
+  success: boolean;
+  message: string;
+  data?: T;
+  pagination?: unknown;
+}
 
-/**
- * Get all published collections
- */
-export async function getCollections(page: number = 1, limit: number = 12) {
-  const session = await getServerSession(authConfig);
+function isAdmin(session: any): boolean {
+  const role = String(session?.user?.role || '').toUpperCase();
+  return role === 'ADMIN';
+}
 
-  if (!session?.user) {
-    return { success: false, message: 'Unauthorized', data: [], pagination: null };
-  }
-
+export async function getCollections(
+  page: number = 1,
+  limit: number = 12
+): Promise<ActionResponse<unknown[]>> {
   try {
     const result = await CollectionService.getCollections(page, limit);
     return {
       success: true,
-      data: result.data,
+      message: 'Collections successfully retrieved.',
+      data: JSON.parse(JSON.stringify(result.data)),
       pagination: result.pagination,
     };
   } catch (error) {
-    console.error('Error fetching collections:', error);
-    return { success: false, message: 'Failed to fetch collections', data: [], pagination: null };
+    console.error('[CollectionsAction] getCollections error:', error);
+    return { success: false, message: 'Failed to fetch collections.', data: [], pagination: null };
   }
 }
 
-/**
- * Get featured collections
- */
-export async function getFeaturedCollections(limit: number = 6) {
+export async function getFeaturedCollections(
+  limit: number = 6
+): Promise<ActionResponse<unknown[]>> {
   try {
     const collections = await CollectionService.getFeaturedCollections(limit);
-    return { success: true, data: collections };
+    return {
+      success: true,
+      message: 'Featured collections loaded.',
+      data: JSON.parse(JSON.stringify(collections)),
+    };
   } catch (error) {
-    console.error('Error fetching featured collections:', error);
-    return { success: false, message: 'Failed to fetch featured collections', data: [] };
+    console.error('[CollectionsAction] getFeaturedCollections error:', error);
+    return { success: false, message: 'Failed to fetch featured collections.', data: [] };
   }
 }
 
-/**
- * Get collection by slug
- */
-export async function getCollectionBySlug(slug: string) {
+export async function getCollectionBySlug(
+  slug: string
+): Promise<ActionResponse<unknown | null>> {
   try {
     const collection = await CollectionService.getCollectionBySlug(slug);
     if (!collection) {
-      return { success: false, message: 'Collection not found', data: null };
+      return { success: false, message: 'Collection portfolio not found.', data: null };
     }
-    return { success: true, data: collection };
+    return {
+      success: true,
+      message: 'Collection retrieved successfully.',
+      data: JSON.parse(JSON.stringify(collection)),
+    };
   } catch (error) {
-    console.error('Error fetching collection:', error);
-    return { success: false, message: 'Failed to fetch collection', data: null };
+    console.error('[CollectionsAction] getCollectionBySlug error:', error);
+    return { success: false, message: 'Failed to retrieve collection.', data: null };
   }
 }
 
-/**
- * Get collection by ID
- */
-export async function getCollectionById(id: string) {
-  const session = await getServerSession(authConfig);
-
-  if (!session?.user) {
-    return { success: false, message: 'Unauthorized', data: null };
-  }
-
+export async function getCollectionById(
+  id: string
+): Promise<ActionResponse<unknown | null>> {
   try {
     const collection = await CollectionService.getCollectionById(id);
     if (!collection) {
-      return { success: false, message: 'Collection not found', data: null };
+      return { success: false, message: 'Collection portfolio not found.', data: null };
     }
-    return { success: true, data: collection };
+    return {
+      success: true,
+      message: 'Collection retrieved successfully.',
+      data: JSON.parse(JSON.stringify(collection)),
+    };
   } catch (error) {
-    console.error('Error fetching collection:', error);
-    return { success: false, message: 'Failed to fetch collection', data: null };
+    console.error('[CollectionsAction] getCollectionById error:', error);
+    return { success: false, message: 'Failed to retrieve collection.', data: null };
   }
 }
 
-// ─────────────────────────────────────────────────────────────
-// CREATE / UPDATE / DELETE
-// ─────────────────────────────────────────────────────────────
-
-/**
- * Create a new collection
- */
-export async function createCollection(data: CreateCollectionData) {
-  const session = await getServerSession(authConfig);
-
-  if (!session?.user || session.user.role !== 'ADMIN') {
-    return { success: false, message: 'Unauthorized' };
-  }
-
+export async function createCollection(
+  data: CreateCollectionData
+): Promise<ActionResponse<unknown>> {
   try {
-    const collection = await CollectionService.createCollection(data, session.user.id!);
+    const session = await getServerSession(authConfig);
+    if (!session?.user || !isAdmin(session)) {
+      return { success: false, message: 'Unauthorized permission level.' };
+    }
+
+    const collection = await CollectionService.createCollection(
+      data,
+      (session.user as any).id
+    );
     revalidatePath('/admin/content');
     revalidatePath('/collections');
-    return { success: true, data: collection, message: 'Collection created successfully' };
+    return {
+      success: true,
+      message: 'Collection successfully registered.',
+      data: JSON.parse(JSON.stringify(collection)),
+    };
   } catch (error) {
-    console.error('Error creating collection:', error);
-    return { success: false, message: 'Failed to create collection' };
+    console.error('[CollectionsAction] createCollection error:', error);
+    return { success: false, message: 'Failed to create collection.' };
   }
 }
 
-/**
- * Update a collection
- */
-export async function updateCollection(collectionId: string, data: Partial<CreateCollectionData>) {
-  const session = await getServerSession(authConfig);
-
-  if (!session?.user || session.user.role !== 'ADMIN') {
-    return { success: false, message: 'Unauthorized' };
-  }
-
+export async function updateCollection(
+  collectionId: string,
+  data: Partial<CreateCollectionData>
+): Promise<ActionResponse<unknown>> {
   try {
+    const session = await getServerSession(authConfig);
+    if (!session?.user || !isAdmin(session)) {
+      return { success: false, message: 'Unauthorized permission level.' };
+    }
+
     const collection = await CollectionService.updateCollection(collectionId, data);
     if (!collection) {
-      return { success: false, message: 'Collection not found' };
+      return { success: false, message: 'Collection not found.' };
     }
+
     revalidatePath('/admin/content');
     revalidatePath('/collections');
-    revalidatePath(`/collections/${(collection as any).slug}`);
-    return { success: true, data: collection, message: 'Collection updated successfully' };
+    if (collection.slug) revalidatePath(`/collections/${collection.slug}`);
+
+    return {
+      success: true,
+      message: 'Collection details updated successfully.',
+      data: JSON.parse(JSON.stringify(collection)),
+    };
   } catch (error) {
-    console.error('Error updating collection:', error);
-    return { success: false, message: 'Failed to update collection' };
+    console.error('[CollectionsAction] updateCollection error:', error);
+    return { success: false, message: 'Failed to update collection.' };
   }
 }
 
-/**
- * Delete a collection
- */
-export async function deleteCollection(collectionId: string) {
-  const session = await getServerSession(authConfig);
-
-  if (!session?.user || session.user.role !== 'ADMIN') {
-    return { success: false, message: 'Unauthorized' };
-  }
-
+export async function deleteCollection(collectionId: string): Promise<ActionResponse> {
   try {
+    const session = await getServerSession(authConfig);
+    if (!session?.user || !isAdmin(session)) {
+      return { success: false, message: 'Unauthorized permission level.' };
+    }
+
     const result = await CollectionService.deleteCollection(collectionId);
     if (!result) {
-      return { success: false, message: 'Collection not found' };
+      return { success: false, message: 'Collection portfolio not found.' };
     }
+
     revalidatePath('/admin/content');
     revalidatePath('/collections');
-    return { success: true, message: 'Collection deleted successfully' };
+    return { success: true, message: 'Collection portfolio permanently archived.' };
   } catch (error) {
-    console.error('Error deleting collection:', error);
-    return { success: false, message: 'Failed to delete collection' };
+    console.error('[CollectionsAction] deleteCollection error:', error);
+    return { success: false, message: 'Failed to archive collection.' };
   }
 }
 
-// ─────────────────────────────────────────────────────────────
-// VEHICLE MANAGEMENT
-// ─────────────────────────────────────────────────────────────
-
-/**
- * Add vehicles to a collection
- */
-export async function addVehiclesToCollection(collectionId: string, vehicleIds: string[]) {
-  const session = await getServerSession(authConfig);
-
-  if (!session?.user || session.user.role !== 'ADMIN') {
-    return { success: false, message: 'Unauthorized' };
-  }
-
+export async function addVehiclesToCollection(
+  collectionId: string,
+  vehicleIds: string[]
+): Promise<ActionResponse<unknown>> {
   try {
-    const collection = await CollectionService.addVehiclesToCollection(collectionId, vehicleIds);
-    if (!collection) {
-      return { success: false, message: 'Collection not found' };
+    const session = await getServerSession(authConfig);
+    if (!session?.user || !isAdmin(session)) {
+      return { success: false, message: 'Unauthorized permission level.' };
     }
-    revalidatePath('/admin/content');
-    revalidatePath(`/collections/${(collection as any).slug}`);
-    return { success: true, data: collection, message: 'Vehicles added to collection' };
-  } catch (error) {
-    console.error('Error adding vehicles to collection:', error);
-    return { success: false, message: 'Failed to add vehicles to collection' };
-  }
-}
 
-/**
- * Remove vehicles from a collection
- */
-export async function removeVehiclesFromCollection(collectionId: string, vehicleIds: string[]) {
-  const session = await getServerSession(authConfig);
-
-  if (!session?.user || session.user.role !== 'ADMIN') {
-    return { success: false, message: 'Unauthorized' };
-  }
-
-  try {
-    const collection = await CollectionService.removeVehiclesFromCollection(collectionId, vehicleIds);
+    const collection = await CollectionService.addVehiclesToCollection(
+      collectionId,
+      vehicleIds
+    );
     if (!collection) {
-      return { success: false, message: 'Collection not found' };
+      return { success: false, message: 'Collection portfolio not found.' };
     }
+
     revalidatePath('/admin/content');
-    revalidatePath(`/collections/${(collection as any).slug}`);
-    return { success: true, data: collection, message: 'Vehicles removed from collection' };
+    if (collection.slug) revalidatePath(`/collections/${collection.slug}`);
+
+    return {
+      success: true,
+      message: 'Vehicles successfully added to collection.',
+      data: JSON.parse(JSON.stringify(collection)),
+    };
   } catch (error) {
-    console.error('Error removing vehicles from collection:', error);
-    return { success: false, message: 'Failed to remove vehicles from collection' };
+    console.error('[CollectionsAction] addVehiclesToCollection error:', error);
+    return { success: false, message: 'Failed to update collection fleet.' };
   }
 }
 
-// ─────────────────────────────────────────────────────────────
-// STATISTICS
-// ─────────────────────────────────────────────────────────────
-
-/**
- * Get collection statistics
- */
-export async function getCollectionStats() {
-  const session = await getServerSession(authConfig);
-
-  if (!session?.user || session.user.role !== 'ADMIN') {
-    return { success: false, message: 'Unauthorized', data: null };
-  }
-
+export async function removeVehiclesFromCollection(
+  collectionId: string,
+  vehicleIds: string[]
+): Promise<ActionResponse<unknown>> {
   try {
+    const session = await getServerSession(authConfig);
+    if (!session?.user || !isAdmin(session)) {
+      return { success: false, message: 'Unauthorized permission level.' };
+    }
+
+    const collection = await CollectionService.removeVehiclesFromCollection(
+      collectionId,
+      vehicleIds
+    );
+    if (!collection) {
+      return { success: false, message: 'Collection portfolio not found.' };
+    }
+
+    revalidatePath('/admin/content');
+    if (collection.slug) revalidatePath(`/collections/${collection.slug}`);
+
+    return {
+      success: true,
+      message: 'Vehicles successfully removed from collection.',
+      data: JSON.parse(JSON.stringify(collection)),
+    };
+  } catch (error) {
+    console.error('[CollectionsAction] removeVehiclesFromCollection error:', error);
+    return { success: false, message: 'Failed to update collection fleet.' };
+  }
+}
+
+export async function getCollectionStats(): Promise<ActionResponse<unknown>> {
+  try {
+    const session = await getServerSession(authConfig);
+    if (!session?.user || !isAdmin(session)) {
+      return { success: false, message: 'Unauthorized permission level.', data: null };
+    }
+
     const stats = await CollectionService.getCollectionStats();
-    return { success: true, data: stats };
+    return {
+      success: true,
+      message: 'Statistics loaded.',
+      data: JSON.parse(JSON.stringify(stats)),
+    };
   } catch (error) {
-    console.error('Error fetching collection stats:', error);
-    return { success: false, message: 'Failed to fetch collection stats', data: null };
+    console.error('[CollectionsAction] getCollectionStats error:', error);
+    return { success: false, message: 'Failed to fetch collection stats.', data: null };
   }
 }
 
-/**
- * Get vehicles in a collection
- */
-export async function getCollectionVehicles(collectionId: string) {
-  const session = await getServerSession(authConfig);
-
-  if (!session?.user) {
-    return { success: false, message: 'Unauthorized', data: [] };
-  }
-
+export async function getCollectionVehicles(
+  collectionId: string
+): Promise<ActionResponse<unknown[]>> {
   try {
     const vehicles = await CollectionService.getCollectionVehicles(collectionId);
-    return { success: true, data: vehicles };
+    return {
+      success: true,
+      message: 'Collection vehicles retrieved.',
+      data: JSON.parse(JSON.stringify(vehicles)),
+    };
   } catch (error) {
-    console.error('Error fetching collection vehicles:', error);
-    return { success: false, message: 'Failed to fetch collection vehicles', data: [] };
+    console.error('[CollectionsAction] getCollectionVehicles error:', error);
+    return { success: false, message: 'Failed to fetch collection vehicles.', data: [] };
   }
 }
 
-/**
- * Toggle collection featured status
- */
-export async function toggleCollectionFeatured(collectionId: string) {
-  const session = await getServerSession(authConfig);
-
-  if (!session?.user || session.user.role !== 'ADMIN') {
-    return { success: false, message: 'Unauthorized' };
-  }
-
+export async function toggleCollectionFeatured(
+  collectionId: string
+): Promise<ActionResponse<unknown>> {
   try {
+    const session = await getServerSession(authConfig);
+    if (!session?.user || !isAdmin(session)) {
+      return { success: false, message: 'Unauthorized permission level.' };
+    }
+
     const collection = await CollectionService.toggleFeatured(collectionId);
     if (!collection) {
-      return { success: false, message: 'Collection not found' };
+      return { success: false, message: 'Collection not found.' };
     }
+
     revalidatePath('/admin/content');
     revalidatePath('/collections');
-    revalidatePath(`/collections/${(collection as any).slug}`);
-    return { 
-      success: true, 
-      data: collection, 
-      message: `Collection ${(collection as any).featured ? 'featured' : 'unfeatured'}` 
+    if (collection.slug) revalidatePath(`/collections/${collection.slug}`);
+
+    return {
+      success: true,
+      message: 'Featured status toggled.',
+      data: JSON.parse(JSON.stringify(collection)),
     };
   } catch (error) {
-    console.error('Error toggling collection featured:', error);
-    return { success: false, message: 'Failed to toggle collection featured' };
+    console.error('[CollectionsAction] toggleCollectionFeatured error:', error);
+    return { success: false, message: 'Failed to update collection status.' };
   }
 }
 
-/**
- * Toggle collection published status
- */
-export async function toggleCollectionPublished(collectionId: string) {
-  const session = await getServerSession(authConfig);
-
-  if (!session?.user || session.user.role !== 'ADMIN') {
-    return { success: false, message: 'Unauthorized' };
-  }
-
+export async function reorderCollections(
+  collectionIds: string[]
+): Promise<ActionResponse> {
   try {
-    const collection = await CollectionService.togglePublished(collectionId);
-    if (!collection) {
-      return { success: false, message: 'Collection not found' };
+    const session = await getServerSession(authConfig);
+    if (!session?.user || !isAdmin(session)) {
+      return { success: false, message: 'Unauthorized permission level.' };
     }
-    revalidatePath('/admin/content');
-    revalidatePath('/collections');
-    revalidatePath(`/collections/${(collection as any).slug}`);
-    return { 
-      success: true, 
-      data: collection, 
-      message: `Collection ${(collection as any).published ? 'published' : 'unpublished'}` 
-    };
-  } catch (error) {
-    console.error('Error toggling collection published:', error);
-    return { success: false, message: 'Failed to toggle collection published' };
-  }
-}
 
-/**
- * Reorder collections
- */
-export async function reorderCollections(collectionIds: string[]) {
-  const session = await getServerSession(authConfig);
-
-  if (!session?.user || session.user.role !== 'ADMIN') {
-    return { success: false, message: 'Unauthorized' };
-  }
-
-  try {
     await CollectionService.reorderCollections(collectionIds);
     revalidatePath('/admin/content');
     revalidatePath('/collections');
-    return { success: true, message: 'Collections reordered successfully' };
+    return { success: true, message: 'Collections reordered successfully.' };
   } catch (error) {
-    console.error('Error reordering collections:', error);
-    return { success: false, message: 'Failed to reorder collections' };
+    console.error('[CollectionsAction] reorderCollections error:', error);
+    return { success: false, message: 'Failed to reorder collections.' };
   }
 }
 
-/**
- * Get collections by creator
- */
-export async function getCollectionsByCreator(userId: string) {
-  const session = await getServerSession(authConfig);
-
-  if (!session?.user) {
-    return { success: false, message: 'Unauthorized', data: [] };
-  }
-
+export async function getCollectionsByCreator(
+  userId: string
+): Promise<ActionResponse<unknown[]>> {
   try {
     const collections = await CollectionService.getCollectionsByCreator(userId);
-    return { success: true, data: collections };
+    return {
+      success: true,
+      message: 'Collections loaded.',
+      data: JSON.parse(JSON.stringify(collections)),
+    };
   } catch (error) {
-    console.error('Error fetching collections by creator:', error);
-    return { success: false, message: 'Failed to fetch collections', data: [] };
+    console.error('[CollectionsAction] getCollectionsByCreator error:', error);
+    return { success: false, message: 'Failed to fetch collections.', data: [] };
   }
 }

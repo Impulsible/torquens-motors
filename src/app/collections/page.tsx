@@ -1,15 +1,11 @@
-/* eslint-disable @typescript-eslint/no-unused-vars */
 import { Metadata } from 'next';
 import Link from 'next/link';
 import Image from 'next/image';
 import {
   ArrowRight,
   Sparkles,
-  Layers,
   Car,
   Compass,
-  ShieldCheck,
-  ChevronRight,
   Grid,
 } from 'lucide-react';
 
@@ -17,12 +13,9 @@ import { Container } from '@/components/ui/Container';
 import { Card } from '@/components/ui/Card';
 import { Button } from '@/components/ui/Button';
 import { Badge } from '@/components/ui/Badge';
-import { CollectionService } from '@/services/collection.service';
+import { CollectionService, type ICollectionData } from '@/services/collection.service';
 import { cn } from '@/utils/cn';
 
-// ─────────────────────────────────────────────────────────────
-// METADATA DEFINITION
-// ─────────────────────────────────────────────────────────────
 export const metadata: Metadata = {
   title: 'Curated Collections & Lineages | TORQUENS MOTORS',
   description:
@@ -35,31 +28,54 @@ export const metadata: Metadata = {
   },
 };
 
-// ─────────────────────────────────────────────────────────────
-// STRICT TYPE DEFINITIONS
-// ─────────────────────────────────────────────────────────────
 export interface CollectionData {
   id: string;
   name: string;
   slug: string;
   description?: string | null;
   image?: string | null;
+  bannerImage?: string | null;
   vehicleCount?: number;
   featured?: boolean;
   published?: boolean;
   createdAt?: string | Date;
 }
 
-// ─────────────────────────────────────────────────────────────
-// SERVER-SIDE DATA RETRIEVAL
-// ─────────────────────────────────────────────────────────────
+function mapCollection(c: ICollectionData): CollectionData {
+  return {
+    id: c.id,
+    name: c.name,
+    slug: c.slug,
+    description: c.description ?? null,
+    image: c.image || c.bannerImage || null,
+    bannerImage: c.bannerImage || c.image || null,
+    vehicleCount: c.vehicleCount ?? c.vehicles?.length ?? 0,
+    featured: c.featured ?? false,
+    published: c.active !== false,
+    createdAt: c.createdAt,
+  };
+}
+
 async function getCollections(): Promise<CollectionData[]> {
   try {
-    const data = await CollectionService.getPublishedCollections();
-    return (data as unknown as CollectionData[]) || [];
+    // Prefer paginated published/active collections
+    const result = await CollectionService.getCollections(1, 50);
+
+    if (result?.data && Array.isArray(result.data)) {
+      return result.data.map(mapCollection);
+    }
+
+    // Fallback to full list
+    const all = await CollectionService.getAllCollections();
+    return (all || []).map(mapCollection);
   } catch (error) {
-    console.error('[CollectionsPage] Failed to fetch published collections:', error);
-    return [];
+    console.error('[CollectionsPage] Failed to fetch collections:', error);
+    try {
+      const fallbacks = CollectionService.getAllFallbackCollections();
+      return fallbacks.map(mapCollection);
+    } catch {
+      return [];
+    }
   }
 }
 
@@ -71,12 +87,8 @@ export default async function CollectionsPage() {
   const totalVehiclesCount = collections.reduce((acc, c) => acc + (c.vehicleCount || 0), 0);
 
   return (
-    <main className="min-h-screen bg-obsidian text-primary selection:bg-gold selection:text-obsidian pt-24 pb-20 overflow-hidden">
-      {/* ───────────────────────────────────────────────────────── */}
-      {/* HERO & EDITORIAL BANNER                                    */}
-      {/* ───────────────────────────────────────────────────────── */}
-      <section className="relative py-16 md:py-24 border-b border-border/40 overflow-hidden">
-        {/* Ambient Metallic Lighting */}
+    <main className="min-h-screen bg-obsidian text-primary selection:bg-gold/20 selection:text-gold pt-16 sm:pt-20 pb-20 overflow-hidden">
+      <section className="relative py-8 md:py-12 border-b border-border/40 overflow-hidden">
         <div
           aria-hidden="true"
           className="pointer-events-none absolute top-0 left-1/2 -translate-x-1/2 w-160 h-80 bg-gold/5 blur-[140px] rounded-full"
@@ -103,13 +115,12 @@ export default async function CollectionsPage() {
                 </span>
               </h1>
 
-              <p className="text-secondary font-sans text-sm sm:text-base leading-relaxed max-w-2xl pt-2">
-                Explore handpicked thematic portfolios of world-class automotive assets. Each series 
+              <p className="text-secondary font-sans text-sm sm:text-base leading-relaxed max-w-2xl pt-1">
+                Explore handpicked thematic portfolios of world-class automotive assets. Each series
                 reflects a dedicated chapter in motorsport heritage, grand touring excellence, and bespoke engineering.
               </p>
             </div>
 
-            {/* Live Registry Metrics Strip */}
             <div className="flex items-center gap-6 pt-4 lg:pt-0 border-t lg:border-t-0 border-border/40 shrink-0">
               <div>
                 <span className="block font-serif text-3xl sm:text-4xl font-light text-primary tabular-nums">
@@ -135,11 +146,7 @@ export default async function CollectionsPage() {
         </Container>
       </section>
 
-      {/* ───────────────────────────────────────────────────────── */}
-      {/* COLLECTIONS GALLERY VIEW                                  */}
-      {/* ───────────────────────────────────────────────────────── */}
-      <Container className="py-16 space-y-16">
-        {/* EMPTY STATE */}
+      <Container className="py-12 sm:py-16 space-y-16">
         {collections.length === 0 ? (
           <div className="rounded-2xl border border-border/60 bg-graphite/40 backdrop-blur-md p-12 sm:p-20 text-center max-w-xl mx-auto space-y-6">
             <div className="w-16 h-16 rounded-full border border-gold/30 bg-gold/5 flex items-center justify-center mx-auto shadow-glow">
@@ -157,7 +164,7 @@ export default async function CollectionsPage() {
 
             <div className="pt-2">
               <Link href="/vehicles">
-                <Button variant="gold" size="md" rightIcon={<Compass className="h-4 w-4" />}>
+                <Button variant="primary" size="md" rightIcon={<Compass className="h-4 w-4" />}>
                   Explore Full Showroom
                 </Button>
               </Link>
@@ -165,7 +172,6 @@ export default async function CollectionsPage() {
           </div>
         ) : (
           <>
-            {/* FEATURED HEADLINE EXHIBITS */}
             {featuredCollections.length > 0 && (
               <section className="space-y-6">
                 <div className="flex items-center justify-between pb-4 border-b border-border/40">
@@ -193,7 +199,6 @@ export default async function CollectionsPage() {
               </section>
             )}
 
-            {/* CATALOG SERIES */}
             {regularCollections.length > 0 && (
               <section className="space-y-6">
                 <div className="flex items-center justify-between pb-4 border-b border-border/40">
@@ -212,15 +217,17 @@ export default async function CollectionsPage() {
                 </div>
               </section>
             )}
+
+            {/* If everything is featured, still show them once */}
+            {featuredCollections.length > 0 && regularCollections.length === 0 && (
+              <></>
+            )}
           </>
         )}
 
-        {/* ───────────────────────────────────────────────────────── */}
-        {/* CONCIERGE BESPOKE SOURCING BANNER                         */}
-        {/* ───────────────────────────────────────────────────────── */}
         <div className="relative rounded-2xl border border-gold/30 bg-graphite/90 p-8 sm:p-12 overflow-hidden shadow-dropdown backdrop-blur-md">
           <div className="absolute top-0 left-0 right-0 h-0.5 bg-linear-to-r from-transparent via-gold to-transparent" />
-          
+
           <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-8 relative z-10">
             <div className="space-y-2 max-w-2xl">
               <Badge variant="gold" size="sm">
@@ -230,14 +237,14 @@ export default async function CollectionsPage() {
                 Seeking an Unlisted or Off-Market Allocation?
               </h3>
               <p className="text-sm font-sans text-secondary leading-relaxed">
-                Our concierge desk facilitates discreet off-market acquisitions, collection liquidations, 
+                Our concierge desk facilitates discreet off-market acquisitions, collection liquidations,
                 and bespoke global sourcing for tier-one private clients.
               </p>
             </div>
 
             <Link href="/contact" className="shrink-0">
               <Button
-                variant="gold"
+                variant="primary"
                 size="lg"
                 rightIcon={<ArrowRight className="h-4 w-4" />}
                 className="w-full sm:w-auto text-xs uppercase tracking-widest font-semibold"
@@ -252,9 +259,6 @@ export default async function CollectionsPage() {
   );
 }
 
-// ─────────────────────────────────────────────────────────────
-// PRO-GRADE COLLECTION CARD COMPONENT
-// ─────────────────────────────────────────────────────────────
 interface CollectionCardProps {
   collection: CollectionData;
   featured?: boolean;
@@ -262,7 +266,8 @@ interface CollectionCardProps {
 }
 
 function CollectionCard({ collection, featured = false, priorityImage = false }: CollectionCardProps) {
-  const fallbackImage = 'https://images.unsplash.com/photo-1503376780353-7e6692767b70?q=80&w=2070&auto=format&fit=crop';
+  const fallbackImage =
+    'https://images.unsplash.com/photo-1503376780353-7e6692767b70?q=80&w=2070&auto=format&fit=crop';
 
   return (
     <Link
@@ -277,14 +282,11 @@ function CollectionCard({ collection, featured = false, priorityImage = false }:
             : 'hover:border-gold/40'
         )}
       >
-        {/* Metallic Top Sheen for Featured Items */}
         {featured && (
           <div className="absolute top-0 left-0 right-0 h-0.5 bg-linear-to-r from-transparent via-gold to-transparent z-30 opacity-75" />
         )}
 
-        {/* Cinematic Photograph Container */}
         <div className="relative aspect-16/11 sm:aspect-16/10 w-full overflow-hidden bg-obsidian">
-          {/* Layered Vignette Gradient Overlays */}
           <div className="absolute inset-0 bg-linear-to-t from-obsidian via-obsidian/60 to-transparent z-10 transition-opacity duration-500 group-hover:opacity-90" />
           <div className="absolute inset-0 bg-linear-to-b from-obsidian/40 via-transparent to-transparent z-10" />
 
@@ -297,7 +299,6 @@ function CollectionCard({ collection, featured = false, priorityImage = false }:
             className="object-cover object-center transition-transform duration-700 ease-out group-hover:scale-105"
           />
 
-          {/* Featured Heritage Badge */}
           {featured && (
             <div className="absolute top-4 left-4 z-20">
               <Badge variant="gold" size="sm" className="shadow-lg backdrop-blur-md bg-obsidian/80">
@@ -307,7 +308,6 @@ function CollectionCard({ collection, featured = false, priorityImage = false }:
             </div>
           )}
 
-          {/* Content Dossier Block */}
           <div className="absolute bottom-0 left-0 right-0 p-6 z-20 flex flex-col justify-end space-y-2">
             <h3 className="text-xl sm:text-2xl font-serif font-light text-white tracking-tight group-hover:text-gold transition-colors duration-300">
               {collection.name}
@@ -319,12 +319,12 @@ function CollectionCard({ collection, featured = false, priorityImage = false }:
               </p>
             )}
 
-            {/* Meta Strip & Explore Trigger */}
             <div className="pt-2 flex items-center justify-between border-t border-white/10 text-xs font-sans text-white/60">
               <span className="flex items-center gap-1.5 font-mono text-[11px] text-white/80">
                 <Car className="h-3.5 w-3.5 text-gold/80" />
                 <span>
-                  {collection.vehicleCount || 0} vehicle{collection.vehicleCount === 1 ? '' : 's'}
+                  {collection.vehicleCount || 0} vehicle
+                  {collection.vehicleCount === 1 ? '' : 's'}
                 </span>
               </span>
 

@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-unused-vars */
 /* eslint-disable react-hooks/set-state-in-effect */
 'use client';
 
@@ -19,6 +20,7 @@ import {
 
 import { UserMenu } from '../navigation/UserMenu';
 import { MobileMenu } from '../navigation/MobileMenu';
+import { NotificationBell } from '../notifications/NotificationBell';
 import { Button } from '@/components/ui/Button';
 import { cn } from '@/utils/cn';
 
@@ -64,7 +66,7 @@ const QUICK_SEARCH_TAGS = [
 export function Header({
   user: userProp = null,
   isAuthenticated: isAuthenticatedProp = false,
-  unreadNotifications = 0,
+  unreadNotifications: unreadNotificationsProp = 0,
   savedCount = 0,
   compareCount = 0,
 }: HeaderProps) {
@@ -99,6 +101,9 @@ export function Header({
   const [isSearchOpen, setIsSearchOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
   const searchInputRef = useRef<HTMLInputElement>(null);
+
+  // Use real unread count from props or default
+  const unreadNotifications = unreadNotificationsProp;
 
   useEffect(() => {
     const handleScroll = () => setIsScrolled(window.scrollY > 20);
@@ -161,6 +166,9 @@ export function Header({
 
   return (
     <>
+      {/* ───────────────────────────────────────────────────────────── */}
+      {/* 1. TOP UTILITY BAR                                          */}
+      {/* ───────────────────────────────────────────────────────────── */}
       <div className="hidden lg:block bg-inset border-b border-border/40 py-1.5 text-xs text-secondary font-sans">
         <div className="container-torquens flex justify-between items-center">
           <div className="flex items-center gap-6">
@@ -192,6 +200,9 @@ export function Header({
         </div>
       </div>
 
+      {/* ───────────────────────────────────────────────────────────── */}
+      {/* 2. MAIN HEADER                                             */}
+      {/* ───────────────────────────────────────────────────────────── */}
       <header
         className={cn(
           'fixed top-0 lg:top-8.25 left-0 right-0 z-50 transition-all duration-300',
@@ -202,6 +213,7 @@ export function Header({
       >
         <div className="container-torquens">
           <div className="flex items-center justify-between gap-3 md:gap-4 min-w-0">
+            {/* ── Logo ── */}
             <Link
               href="/"
               className="flex items-center gap-2 group shrink-0 focus:outline-none"
@@ -217,6 +229,7 @@ export function Header({
               </div>
             </Link>
 
+            {/* ── Desktop Navigation ── */}
             <nav className="hidden lg:flex items-center gap-5 xl:gap-8 flex-1 justify-center min-w-0">
               {NAV_ITEMS.map((item) => {
                 const isActive =
@@ -247,7 +260,9 @@ export function Header({
               })}
             </nav>
 
+            {/* ── Right Side Actions ── */}
             <div className="flex items-center justify-end gap-1.5 sm:gap-2 md:gap-3 shrink-0">
+              {/* Search Button */}
               <button
                 type="button"
                 onClick={() => setIsSearchOpen(true)}
@@ -270,8 +285,10 @@ export function Header({
                 <Search size={16} />
               </button>
 
+              {/* ── Authenticated Actions ── */}
               {isAuthenticated && liveUser ? (
                 <>
+                  {/* Compare */}
                   <Link
                     href="/compare"
                     className="relative hidden md:flex items-center justify-center w-9 h-9 rounded-lg text-secondary hover:text-gold transition-colors shrink-0"
@@ -285,6 +302,7 @@ export function Header({
                     )}
                   </Link>
 
+                  {/* Saved Vehicles */}
                   <Link
                     href="/dashboard/saved"
                     className="relative hidden md:flex items-center justify-center w-9 h-9 rounded-lg text-secondary hover:text-gold transition-colors shrink-0"
@@ -298,18 +316,8 @@ export function Header({
                     )}
                   </Link>
 
-                  <button
-                    type="button"
-                    className="relative hidden md:flex items-center justify-center w-9 h-9 rounded-lg text-secondary hover:text-gold transition-colors shrink-0"
-                    aria-label="Notifications"
-                  >
-                    <Bell size={17} />
-                    {unreadNotifications > 0 && (
-                      <span className="absolute top-0.5 right-0.5 min-w-4 h-4 px-1 rounded-full bg-red-500 text-white text-[9px] font-bold flex items-center justify-center">
-                        {unreadNotifications > 9 ? '9+' : unreadNotifications}
-                      </span>
-                    )}
-                  </button>
+                  {/* ✅ Notification Bell */}
+                  <NotificationBell userId={liveUser.id} />
 
                   <div className="hidden md:block w-px h-5 bg-border mx-0.5 shrink-0" />
 
@@ -321,6 +329,7 @@ export function Header({
                   />
                 </>
               ) : (
+                /* ── Unauthenticated ── */
                 status !== 'loading' && (
                   <div className="hidden sm:flex items-center gap-2 shrink-0">
                     <Link href="/auth/login">
@@ -334,7 +343,7 @@ export function Header({
                     </Link>
                     <Link href="/auth/register">
                       <Button
-                        variant="gold"
+                        variant="primary"
                         size="sm"
                         className="text-xs uppercase tracking-widest font-semibold whitespace-nowrap"
                       >
@@ -345,6 +354,7 @@ export function Header({
                 )
               )}
 
+              {/* Loading State */}
               {status === 'loading' && !isAuthenticated && (
                 <div className="hidden sm:flex items-center gap-2 shrink-0">
                   <div className="h-8 w-16 rounded-md bg-charcoal/80 animate-pulse" />
@@ -352,6 +362,7 @@ export function Header({
                 </div>
               )}
 
+              {/* Mobile Menu Toggle */}
               <button
                 type="button"
                 onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
@@ -366,6 +377,9 @@ export function Header({
         </div>
       </header>
 
+      {/* ───────────────────────────────────────────────────────────── */}
+      {/* 3. SEARCH OVERLAY                                           */}
+      {/* ───────────────────────────────────────────────────────────── */}
       {isSearchOpen && (
         <div className="fixed inset-0 z-50 flex items-start justify-center pt-16 sm:pt-20 md:pt-28 px-4 bg-obsidian/90 backdrop-blur-md animate-in fade-in duration-200">
           <div
@@ -445,6 +459,9 @@ export function Header({
         </div>
       )}
 
+      {/* ───────────────────────────────────────────────────────────── */}
+      {/* 4. MOBILE MENU                                              */}
+      {/* ───────────────────────────────────────────────────────────── */}
       <MobileMenu
         isOpen={isMobileMenuOpen}
         onClose={() => setIsMobileMenuOpen(false)}

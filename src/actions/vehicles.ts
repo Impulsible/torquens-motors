@@ -5,46 +5,22 @@
 import { getServerSession } from 'next-auth';
 import { authConfig } from '@/auth/config';
 import { revalidatePath } from 'next/cache';
-// ✅ Fix: Import from the correct path
-import {
-  findMany,
-  findById,
-  update,
-  create,
-  type PaginationOptions,
-  type PaginatedResult,
-} from '@/services/database';
+import { findMany, findById, update, create } from '@/services/database';
 import type { IVehicle } from '@/types';
 
-// Import from vehicle.service
-import {
-  getVehicles,
-  getVehicleById as getVehicleByIdService,
-  getVehicleBySlug,
-  getFeaturedVehicles,
-  getRelatedVehicles,
-  getVehicleMakes,
-  getVehicleModels,
-  getVehicleStats,
-  incrementViews,
-  searchTORQUENSIntelligence,
-  advancedSearch,
-  getSearchSuggestions,
-  getPopularSearches,
-  searchVehicles,
-} from '@/services/vehicle.service';
+import * as VehicleService from '@/services/vehicle.service';
+import ShowroomService from '@/services/showroom.service';
 
-// ─────────────────────────────────────────────────────────────
-// DEALER-SPECIFIC FUNCTIONS
-// ─────────────────────────────────────────────────────────────
+export interface ActionResponse<T = undefined> {
+  success: boolean;
+  message: string;
+  data?: T;
+}
 
-/**
- * Get all vehicles for the current dealer
- */
-export async function getDealerVehicles() {
+export async function getDealerVehicles(): Promise<ActionResponse<IVehicle[]>> {
   const session = await getServerSession(authConfig);
 
-  if (!session?.user?.id || session.user.role !== 'DEALER') {
+  if (!session?.user?.id || (session.user as any).role !== 'DEALER') {
     return { success: false, message: 'Unauthorized', data: [] };
   }
 
@@ -59,61 +35,44 @@ export async function getDealerVehicles() {
         sort: { createdAt: -1 },
       }
     );
-    return { success: true, data: vehicles };
+    return {
+      success: true,
+      message: 'Dealer vehicles fetched successfully.',
+      data: JSON.parse(JSON.stringify(vehicles)),
+    };
   } catch (error) {
     console.error('Error fetching dealer vehicles:', error);
     return { success: false, message: 'Failed to fetch vehicles', data: [] };
   }
 }
 
-/**
- * Archive a vehicle (soft delete)
- */
-export async function archiveVehicle(vehicleId: string, dealerId: string) {
+export async function archiveVehicle(vehicleId: string, dealerId: string): Promise<unknown> {
   const { Vehicle } = await import('@/models/Vehicle');
-  
-  // Verify dealer owns this vehicle
-  const vehicle = await findById(Vehicle as any, vehicleId, {}, { lean: true });
-  if (!vehicle || (vehicle as any).dealer !== dealerId) {
+
+  const vehicle = await findById<IVehicle>(Vehicle as any, vehicleId, {}, { lean: true });
+  if (!vehicle || String(vehicle.dealer) !== dealerId) {
     throw new Error('Unauthorized');
   }
-  
-  return update(
-    Vehicle as any,
-    { _id: vehicleId },
-    { status: 'ARCHIVED' }
-  );
+
+  return update(Vehicle as any, { _id: vehicleId }, { status: 'ARCHIVED' });
 }
 
-/**
- * Update vehicle status
- */
-export async function updateVehicleStatus(vehicleId: string, status: string) {
+export async function updateVehicleStatus(vehicleId: string, status: string): Promise<unknown> {
   const { Vehicle } = await import('@/models/Vehicle');
-  return update(
-    Vehicle as any,
-    { _id: vehicleId },
-    { status }
-  );
+  return update(Vehicle as any, { _id: vehicleId }, { status });
 }
 
-// ─────────────────────────────────────────────────────────────
-// ACTION WRAPPERS
-// ─────────────────────────────────────────────────────────────
-
-/**
- * Delete a vehicle (soft delete / archive)
- */
-export async function deleteVehicle(vehicleId: string) {
+export async function deleteVehicle(vehicleId: string): Promise<ActionResponse> {
   const session = await getServerSession(authConfig);
 
-  if (!session?.user?.id || session.user.role !== 'DEALER') {
+  if (!session?.user?.id || (session.user as any).role !== 'DEALER') {
     return { success: false, message: 'Unauthorized' };
   }
 
   try {
     await archiveVehicle(vehicleId, session.user.id);
     revalidatePath('/dealer/inventory');
+    revalidatePath('/vehicles');
     return { success: true, message: 'Vehicle archived successfully' };
   } catch (error) {
     console.error('Error deleting vehicle:', error);
@@ -121,11 +80,7 @@ export async function deleteVehicle(vehicleId: string) {
   }
 }
 
-/**
- * Get a single vehicle by ID (with dealer auth check)
- * ✅ Renamed to avoid conflict with re-export
- */
-export async function getDealerVehicleById(vehicleId: string) {
+export async function getDealerVehicleById(vehicleId: string): Promise<ActionResponse<unknown | null>> {
   const session = await getServerSession(authConfig);
 
   if (!session?.user?.id) {
@@ -133,35 +88,35 @@ export async function getDealerVehicleById(vehicleId: string) {
   }
 
   try {
-    const vehicle = await getVehicleByIdService(vehicleId);
-    return { success: true, data: vehicle };
+    const vehicle = await VehicleService.getVehicleById(vehicleId);
+    return {
+      success: true,
+      message: 'Vehicle fetched.',
+      data: vehicle ? JSON.parse(JSON.stringify(vehicle)) : null,
+    };
   } catch (error) {
     console.error('Error fetching vehicle:', error);
     return { success: false, message: 'Failed to fetch vehicle', data: null };
   }
 }
 
-/**
- * Create a new vehicle (for dealer use)
- */
-export async function createVehicle(formData: FormData) {
+export async function createVehicle(formData: FormData): Promise<ActionResponse<unknown>> {
   const session = await getServerSession(authConfig);
 
-  if (!session?.user?.id || session.user.role !== 'DEALER') {
+  if (!session?.user?.id || (session.user as any).role !== 'DEALER') {
     return { success: false, message: 'Unauthorized' };
   }
 
   try {
     const { Vehicle } = await import('@/models/Vehicle');
 
-    // Extract data from FormData
     const data = {
       make: formData.get('make') as string,
       model: formData.get('model') as string,
-      year: parseInt(formData.get('year') as string),
+      year: parseInt(formData.get('year') as string, 10),
       price: parseFloat(formData.get('price') as string),
       currency: (formData.get('currency') as string) || 'NGN',
-      mileage: parseInt(formData.get('mileage') as string) || 0,
+      mileage: parseInt(formData.get('mileage') as string, 10) || 0,
       transmission: formData.get('transmission') as string,
       fuelType: formData.get('fuelType') as string,
       location: formData.get('location') as string,
@@ -175,30 +130,44 @@ export async function createVehicle(formData: FormData) {
 
     const vehicle = await create(Vehicle as any, data);
     revalidatePath('/dealer/inventory');
-    return { success: true, data: vehicle, message: 'Vehicle created successfully' };
+    revalidatePath('/vehicles');
+    return {
+      success: true,
+      message: 'Vehicle created successfully',
+      data: JSON.parse(JSON.stringify(vehicle)),
+    };
   } catch (error) {
     console.error('Error creating vehicle:', error);
     return { success: false, message: 'Failed to create vehicle' };
   }
 }
 
-/**
- * Update an existing vehicle
- */
-export async function updateVehicle(vehicleId: string, formData: FormData) {
+export async function updateVehicle(vehicleId: string, formData: FormData): Promise<ActionResponse<unknown>> {
   const session = await getServerSession(authConfig);
 
-  if (!session?.user?.id || session.user.role !== 'DEALER') {
+  if (!session?.user?.id || (session.user as any).role !== 'DEALER') {
     return { success: false, message: 'Unauthorized' };
   }
 
   try {
     const { Vehicle } = await import('@/models/Vehicle');
 
-    // Extract data from FormData
-    const data: Record<string, any> = {};
-    const fields = ['make', 'model', 'year', 'price', 'currency', 'mileage', 'transmission', 'fuelType', 'location', 'bodyType', 'description', 'status'];
-    
+    const data: Record<string, unknown> = {};
+    const fields = [
+      'make',
+      'model',
+      'year',
+      'price',
+      'currency',
+      'mileage',
+      'transmission',
+      'fuelType',
+      'location',
+      'bodyType',
+      'description',
+      'status',
+    ];
+
     for (const field of fields) {
       const value = formData.get(field);
       if (value !== null && value !== '') {
@@ -216,21 +185,20 @@ export async function updateVehicle(vehicleId: string, formData: FormData) {
       }
     }
 
-    // Verify dealer owns this vehicle
-    const vehicle = await findById(Vehicle as any, vehicleId, {}, { lean: true });
-    if (!vehicle || (vehicle as any).dealer !== session.user.id) {
+    const vehicle = await findById<IVehicle>(Vehicle as any, vehicleId, {}, { lean: true });
+    if (!vehicle || String(vehicle.dealer) !== session.user.id) {
       return { success: false, message: 'Unauthorized' };
     }
 
-    const updated = await update(
-      Vehicle as any,
-      { _id: vehicleId },
-      data
-    );
-    
+    const updated = await update(Vehicle as any, { _id: vehicleId }, data);
+
     revalidatePath('/dealer/inventory');
     revalidatePath(`/vehicles/${vehicleId}`);
-    return { success: true, data: updated, message: 'Vehicle updated successfully' };
+    return {
+      success: true,
+      message: 'Vehicle updated successfully',
+      data: JSON.parse(JSON.stringify(updated)),
+    };
   } catch (error) {
     console.error('Error updating vehicle:', error);
     return { success: false, message: 'Failed to update vehicle' };
@@ -238,23 +206,167 @@ export async function updateVehicle(vehicleId: string, formData: FormData) {
 }
 
 // ─────────────────────────────────────────────────────────────
-// RE-EXPORT public functions from vehicle.service
+// PUBLIC VEHICLE SERVER ACTIONS
 // ─────────────────────────────────────────────────────────────
 
-// Re-export for use in other actions
-export {
-  getVehicles,
-  getVehicleByIdService as getVehicleById,
-  getVehicleBySlug,
-  getFeaturedVehicles,
-  getRelatedVehicles,
-  getVehicleMakes,
-  getVehicleModels,
-  getVehicleStats,
-  incrementViews,
-  searchTORQUENSIntelligence,
-  advancedSearch,
-  getSearchSuggestions,
-  getPopularSearches,
-  searchVehicles,
-};
+export async function getVehicles(
+  filters?: any,
+  pagination?: { page?: number; limit?: number },
+  sort?: any
+) {
+  try {
+    const result = await VehicleService.getVehicles(filters || {}, pagination, sort);
+    return JSON.parse(JSON.stringify(result));
+  } catch (error) {
+    console.error('Error in getVehicles action:', error);
+    return { data: [], pagination: { total: 0, hasNextPage: false } };
+  }
+}
+
+export async function getVehicleById(vehicleId: string): Promise<ActionResponse<IVehicle | null>> {
+  try {
+    const result = await VehicleService.getVehicleById(vehicleId);
+    if (!result) {
+      return {
+        success: false,
+        message: 'Vehicle not found in registry',
+        data: null,
+      };
+    }
+    return {
+      success: true,
+      message: 'Vehicle resolved successfully',
+      data: JSON.parse(JSON.stringify(result)),
+    };
+  } catch (error) {
+    console.error('Error in getVehicleById action:', error);
+    return {
+      success: false,
+      message: 'Failed to fetch vehicle specification',
+      data: null,
+    };
+  }
+}
+
+export async function getVehicleByIdAction(vehicleId: string): Promise<ActionResponse<IVehicle | null>> {
+  return getVehicleById(vehicleId);
+}
+
+export async function getVehicleBySlug(slug: string) {
+  try {
+    const result = await VehicleService.getVehicleBySlug(slug);
+    return result ? JSON.parse(JSON.stringify(result)) : null;
+  } catch (error) {
+    console.error('Error in getVehicleBySlug action:', error);
+    return null;
+  }
+}
+
+export async function getFeaturedVehicles(limit?: number) {
+  try {
+    const result = await VehicleService.getFeaturedVehicles(limit);
+    return JSON.parse(JSON.stringify(result));
+  } catch (error) {
+    console.error('Error in getFeaturedVehicles action:', error);
+    return [];
+  }
+}
+
+export async function getRelatedVehicles(vehicleId: string, ...args: any[]) {
+  try {
+    const result = await (VehicleService.getRelatedVehicles as any)(vehicleId, ...args);
+    return JSON.parse(JSON.stringify(result));
+  } catch (error) {
+    console.error('Error in getRelatedVehicles action:', error);
+    return [];
+  }
+}
+
+export async function getVehicleMakes() {
+  try {
+    const result = await VehicleService.getVehicleMakes();
+    return JSON.parse(JSON.stringify(result));
+  } catch (error) {
+    console.error('Error in getVehicleMakes action:', error);
+    return [];
+  }
+}
+
+export async function getVehicleModels(make: string) {
+  try {
+    const result = await VehicleService.getVehicleModels(make);
+    return JSON.parse(JSON.stringify(result));
+  } catch (error) {
+    console.error('Error in getVehicleModels action:', error);
+    return [];
+  }
+}
+
+export async function getVehicleStats() {
+  try {
+    const result = await VehicleService.getVehicleStats();
+    return JSON.parse(JSON.stringify(result));
+  } catch (error) {
+    console.error('Error in getVehicleStats action:', error);
+    return null;
+  }
+}
+
+export async function incrementViews(vehicleId: string) {
+  try {
+    return await VehicleService.incrementViews(vehicleId);
+  } catch (error) {
+    console.error('Error in incrementViews action:', error);
+    return null;
+  }
+}
+
+export async function searchTORQUENSIntelligence(query: string) {
+  try {
+    const result = await VehicleService.searchTORQUENSIntelligence(query);
+    return JSON.parse(JSON.stringify(result));
+  } catch (error) {
+    console.error('Error in searchTORQUENSIntelligence action:', error);
+    return [];
+  }
+}
+
+export async function advancedSearch(params: any) {
+  try {
+    const result = await (VehicleService.advancedSearch as any)(params);
+    return JSON.parse(JSON.stringify(result));
+  } catch (error) {
+    console.error('Error in advancedSearch action:', error);
+    return [];
+  }
+}
+
+export async function getSearchSuggestions(query: string) {
+  try {
+    const result = await VehicleService.getSearchSuggestions(query);
+    return JSON.parse(JSON.stringify(result));
+  } catch (error) {
+    console.error('Error in getSearchSuggestions action:', error);
+    return [];
+  }
+}
+
+export async function getPopularSearches() {
+  try {
+    const result = await VehicleService.getPopularSearches();
+    return JSON.parse(JSON.stringify(result));
+  } catch (error) {
+    console.error('Error in getPopularSearches action:', error);
+    return [];
+  }
+}
+
+export async function searchVehicles(query: string) {
+  try {
+    const result = await VehicleService.searchVehicles(query);
+    return JSON.parse(JSON.stringify(result));
+  } catch (error) {
+    console.error('Error in searchVehicles action:', error);
+    return [];
+  }
+}

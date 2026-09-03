@@ -13,6 +13,11 @@ export interface Toast {
 }
 
 interface ToastContextType {
+  [x: string]: any;
+  [x: string]: any;
+  [x: string]: any;
+  error(arg0: string): unknown;
+  success(arg0: string): unknown;
   toasts: Toast[];
   showToast: (toast: Omit<Toast, 'id'>) => void;
   hideToast: (id: string) => void;

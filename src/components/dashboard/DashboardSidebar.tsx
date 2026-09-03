@@ -59,15 +59,10 @@ export function DashboardSidebar({ isMobile = false, onClose }: DashboardSidebar
   const [savedCount, setSavedCount] = useState<number>(0);
   const [isLoadingCount, setIsLoadingCount] = useState(true);
 
-  // Fetch saved vehicles count
   useEffect(() => {
     const fetchSavedCount = async () => {
-      // Don't fetch if profile is still loading or not available
-      if (profileLoading) {
-        return;
-      }
+      if (profileLoading) return;
 
-      // If no profile (user not logged in), set count to 0 and stop loading
       if (!profile?.id) {
         setSavedCount(0);
         setIsLoadingCount(false);
@@ -76,15 +71,13 @@ export function DashboardSidebar({ isMobile = false, onClose }: DashboardSidebar
 
       try {
         setIsLoadingCount(true);
-        console.log('Fetching saved vehicles count for user:', profile.id);
-        
         const result = await getSavedVehicles();
-        console.log('Saved vehicles result:', result);
         
-        if (result.success) {
+        if (result && result.success && Array.isArray(result.data)) {
           setSavedCount(result.data.length);
+        } else if (Array.isArray(result)) {
+          setSavedCount(result.length);
         } else {
-          console.warn('Failed to fetch saved vehicles:', result.message);
           setSavedCount(0);
         }
       } catch (error) {
@@ -96,16 +89,12 @@ export function DashboardSidebar({ isMobile = false, onClose }: DashboardSidebar
     };
 
     fetchSavedCount();
-  }, [profile?.id, profileLoading]);
+  }, [profile?.id, profileLoading, pathname]);
 
-  // ---------------------------------------------------------------------------
-  // RELIABLE CLIENT-SIDE SIGN OUT
-  // ---------------------------------------------------------------------------
   const handleLogout = async () => {
     try {
       setIsLoggingOut(true);
       if (onClose) onClose();
-      // Destroys NextAuth session cookie and redirects cleanly
       await signOut({ callbackUrl: '/auth/login' });
     } catch (error) {
       console.error('Logout error:', error);
@@ -160,8 +149,7 @@ export function DashboardSidebar({ isMobile = false, onClose }: DashboardSidebar
                   const isActive = pathname === item.href;
                   const Icon = item.icon;
                   
-                  // Determine badge content for Saved Vehicles
-                  let badgeContent = null;
+                  let badgeContent: string | null = null;
                   if (item.showBadge) {
                     if (isLoadingCount) {
                       badgeContent = '...';
@@ -192,7 +180,6 @@ export function DashboardSidebar({ isMobile = false, onClose }: DashboardSidebar
                         <span>{item.label}</span>
                       </div>
 
-                      {/* Show badge with actual count or loading state */}
                       {item.showBadge && (
                         <span
                           className={cn(
@@ -232,7 +219,6 @@ export function DashboardSidebar({ isMobile = false, onClose }: DashboardSidebar
           <ExternalLink className="h-3 w-3" />
         </Link>
 
-        {/* Reliable Sign Out Trigger */}
         <button
           type="button"
           onClick={handleLogout}

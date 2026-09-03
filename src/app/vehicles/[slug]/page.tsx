@@ -1,10 +1,8 @@
 /* eslint-disable @typescript-eslint/no-unused-vars */
-/* eslint-disable @typescript-eslint/no-require-imports */
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import type { Metadata } from 'next';
 import { notFound } from 'next/navigation';
 import Link from 'next/link';
-import Image from 'next/image';
 import {
   ArrowLeft,
   Calendar,
@@ -26,13 +24,18 @@ import { VehicleDealerInfo } from '@/components/vehicle/VehicleDealerInfo';
 import { VehicleEnquiryForm } from '@/components/vehicle/VehicleEnquiryForm';
 import { SpecificationList, type VehicleSpecification } from '@/components/shared/SpecificationList';
 import { RelatedVehicles } from '@/components/vehicle/RelatedVehicles';
+import { SEOHead } from '@/components/seo/SEOHead';
+import { StructuredData } from '@/components/seo/StructuredData';
+import { 
+  generateVehicleSEO, 
+  generateVehicleStructuredData, 
+  generateBreadcrumbStructuredData,
+  generateOrganizationStructuredData 
+} from '@/lib/seo';
 import * as VehicleService from '@/services/vehicle.service';
 import { CloudinaryService } from '@/services/cloudinary.service';
 import { formatCurrency } from '@/utils/helpers';
-
-// Note: The comparison context is client-side only, so we can't use it in a Server Component.
-// The compare button with full functionality will be handled in a client wrapper.
-// For now, we render the button as a server component with basic props.
+import { VehicleEntity } from '@/lib/seo';
 
 interface PageProps {
   params: Promise<{
@@ -40,26 +43,18 @@ interface PageProps {
   }>;
 }
 
-// -----------------------------------------------------------------------------
-// IMAGE OPTIMIZATION HELPER
-// -----------------------------------------------------------------------------
+// Helper to optimize image URLs
 function getOptimizedImage(url: string, size: 'thumbnail' | 'small' | 'medium' | 'large' = 'large'): string {
   if (!url) return '/placeholder-vehicle.jpg';
   
-  // Check if it's a Cloudinary URL
   if (url.includes('cloudinary.com')) {
     try {
-      // Extract public ID from Cloudinary URL
-      // Example: https://res.cloudinary.com/cloud-name/image/upload/v1234567890/folder/vehicle-id.jpg
       const urlParts = url.split('/');
       const uploadIndex = urlParts.indexOf('upload');
       if (uploadIndex === -1) return url;
       
-      // Get the part after 'upload' but before version if present
       let publicId = urlParts.slice(uploadIndex + 1).join('/');
-      // Remove version prefix if present (e.g., v1234567890/)
       publicId = publicId.replace(/^v\d+\//, '');
-      // Remove file extension
       publicId = publicId.replace(/\.[^.]+$/, '');
       
       if (!publicId) return url;
@@ -79,9 +74,7 @@ function getOptimizedImage(url: string, size: 'thumbnail' | 'small' | 'medium' |
   return url;
 }
 
-// -----------------------------------------------------------------------------
-// DYNAMIC SEO METADATA & OPEN GRAPH
-// -----------------------------------------------------------------------------
+// Generate Dynamic SEO Metadata
 export async function generateMetadata({ params }: PageProps): Promise<Metadata> {
   const { slug } = await params;
   const vehicle = await VehicleService.getVehicleBySlug(slug);
@@ -100,7 +93,6 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
   const pageTitle = `${vehicle.year} ${vehicle.make} ${vehicle.model} — ${formattedPrice} | TORQUENS MOTORS`;
   const description = `Acquire this verified ${vehicle.year} ${vehicle.make} ${vehicle.model} in ${vehicle.location}. ${vehicle.mileage.toLocaleString()} km, ${vehicle.transmission} gearbox, ${vehicle.fuelType}. Verified luxury marketplace dossier.`;
 
-  // Get optimized OG image
   const ogImage = vehicle.images.length > 0 
     ? getOptimizedImage(vehicle.images[0], 'large')
     : '/og-torquens.jpg';
@@ -132,45 +124,6 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
   };
 }
 
-// -----------------------------------------------------------------------------
-// COMPARE BUTTON CLIENT WRAPPER
-// -----------------------------------------------------------------------------
-function CompareButtonClient({ vehicleId }: { vehicleId: string }) {
-  'use client';
-  
-  const { useComparison } = require('@/contexts/ComparisonContext');
-  const { addVehicle, removeVehicle, isInComparison, count, maxVehicles } = useComparison();
-  const isInCompare = isInComparison(vehicleId);
-  const canAddToCompare = count < maxVehicles;
-
-  const handleCompare = () => {
-    if (isInCompare) {
-      removeVehicle(vehicleId);
-    } else {
-      addVehicle(vehicleId).catch((error: any) => {
-        console.error(error);
-      });
-    }
-  };
-
-  return (
-    <Button
-      variant="secondary"
-      size="sm"
-      fullWidth
-      onClick={handleCompare}
-      disabled={!isInCompare && !canAddToCompare}
-      leftIcon={<GitCompare size={18} />}
-      className="text-xs py-2.5"
-    >
-      {isInCompare ? 'Remove from Compare' : 'Add to Compare'}
-    </Button>
-  );
-}
-
-// -----------------------------------------------------------------------------
-// MAIN SERVER PAGE COMPONENT
-// -----------------------------------------------------------------------------
 export default async function VehicleDetailPage({ params }: PageProps) {
   const { slug } = await params;
   const vehicle = await VehicleService.getVehicleBySlug(slug);
@@ -179,10 +132,10 @@ export default async function VehicleDetailPage({ params }: PageProps) {
     notFound();
   }
 
-  // Asynchronously increment view telemetry
+  // Increment view telemetry
   await VehicleService.incrementViews(vehicle.id).catch(() => {});
 
-  // Fetch similar vehicles for bottom carousel/grid - limited to 4 for RelatedVehicles
+  // Fetch related vehicles
   const relatedVehicles = await VehicleService.getRelatedVehicles(
     vehicle.id,
     vehicle.make,
@@ -194,7 +147,7 @@ export default async function VehicleDetailPage({ params }: PageProps) {
   const isSold = vehicle.status?.toUpperCase() === 'SOLD';
   const isReserved = vehicle.status?.toUpperCase() === 'RESERVED';
 
-  // Normalize dealer data
+  // Normalize dealer details
   const rawDealer = vehicle.dealer as Record<string, any> | undefined;
   const dealer = {
     id: rawDealer?.id || rawDealer?._id?.toString() || 'dealer-1',
@@ -220,7 +173,6 @@ export default async function VehicleDetailPage({ params }: PageProps) {
     ? formatCurrency(vehicle.price, vehicle.currency || 'NGN')
     : `${vehicle.currency === 'USD' ? '$' : '₦'}${vehicle.price.toLocaleString()}`;
 
-  // Use correct property names from IVehicle
   const engineDisplay = vehicle.engine || `${vehicle.horsepower || 375}hp Engine`;
   const horsepowerDisplay = vehicle.horsepower || 375;
 
@@ -275,7 +227,41 @@ export default async function VehicleDetailPage({ params }: PageProps) {
     },
   ];
 
-  // Schema.org JSON-LD Structured Data
+  // Typed vehicle entity for SEO
+  const vehicleEntity: VehicleEntity = {
+    slug: vehicle.slug || '',
+    make: vehicle.make || '',
+    model: vehicle.model || '',
+    year: vehicle.year || 0,
+    price: vehicle.price || 0,
+    currency: vehicle.currency || 'NGN',
+    location: vehicle.location || '',
+    mileage: vehicle.mileage || 0,
+    transmission: (vehicle.transmission as any) || 'Automatic',
+    fuelType: (vehicle.fuelType as any) || 'Petrol',
+    status: (vehicle.status as any) || 'AVAILABLE',
+    images: vehicle.images || [],
+    description: vehicle.description || '',
+    createdAt: vehicle.createdAt?.toString() || new Date().toISOString(),
+    updatedAt: vehicle.updatedAt?.toString() || new Date().toISOString(),
+    dealer: rawDealer ? {
+      name: rawDealer.name || '',
+      location: rawDealer.location || vehicle.location || '',
+      phone: rawDealer.phone || '',
+      email: rawDealer.email || '',
+      website: rawDealer.website || '',
+    } : undefined,
+  };
+
+  const seoMetadata = generateVehicleSEO(vehicleEntity);
+  const structuredData = generateVehicleStructuredData(vehicleEntity);
+  const breadcrumbData = generateBreadcrumbStructuredData([
+    { name: 'Home', url: '/' },
+    { name: 'Vehicles', url: '/vehicles' },
+    { name: `${vehicle.make} ${vehicle.model}`, url: `/vehicles/${vehicle.slug}` },
+  ]);
+  const organizationData = generateOrganizationStructuredData();
+
   const jsonLd = {
     '@context': 'https://schema.org/',
     '@type': 'Car',
@@ -308,20 +294,21 @@ export default async function VehicleDetailPage({ params }: PageProps) {
 
   return (
     <>
-      {/* Google SEO JSON-LD Rich Result */}
+      <SEOHead metadata={seoMetadata} />
+      <StructuredData data={structuredData} />
+      <StructuredData data={breadcrumbData} />
+      <StructuredData data={organizationData} />
+
       <script
         type="application/ld+json"
         dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
       />
 
       <main className="min-h-screen pt-20 pb-20 bg-obsidian selection:bg-gold selection:text-obsidian">
-        {/* Ambient Top Glow */}
         <div className="pointer-events-none absolute top-0 left-1/2 -translate-x-1/2 w-250 h-100 bg-gold/5 blur-[140px] rounded-full" />
 
         <div className="container-torquens relative z-10">
-          {/* --------------------------------------------------------------- */}
-          {/* BREADCRUMB & BACK ACTION                                        */}
-          {/* --------------------------------------------------------------- */}
+          {/* Breadcrumbs */}
           <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-6 pt-4">
             <div className="flex items-center gap-2 text-xs font-sans text-muted overflow-x-auto no-scrollbar py-1">
               <Link href="/" className="hover:text-gold transition-colors shrink-0">
@@ -353,15 +340,10 @@ export default async function VehicleDetailPage({ params }: PageProps) {
             </Link>
           </div>
 
-          {/* --------------------------------------------------------------- */}
-          {/* MAIN 12-COLUMN ASYMMETRIC GRID                                  */}
-          {/* --------------------------------------------------------------- */}
+          {/* Grid Layout */}
           <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 lg:gap-10">
-            {/* ============================================================= */}
-            {/* LEFT COLUMN: Media Gallery, Telemetry & Technical Dossier     */}
-            {/* ============================================================= */}
+            {/* Left Column */}
             <div className="lg:col-span-8 space-y-8">
-              {/* Media Gallery - Pass optimized images */}
               <VehicleGallery
                 title={`${vehicle.year} ${vehicle.make} ${vehicle.model}`}
                 images={
@@ -383,10 +365,9 @@ export default async function VehicleDetailPage({ params }: PageProps) {
                 }
               />
 
-              {/* Title & Quick Specifications Banner */}
+              {/* Vehicle Title & Specs */}
               <Card className="p-6 sm:p-8 bg-graphite border-border">
                 <div className="space-y-4">
-                  {/* Make / Model / Badges */}
                   <div className="flex flex-col sm:flex-row sm:items-start justify-between gap-4">
                     <div className="space-y-1">
                       <div className="flex items-center gap-2">
@@ -404,7 +385,6 @@ export default async function VehicleDetailPage({ params }: PageProps) {
                       </h1>
                     </div>
 
-                    {/* Status Badges */}
                     <div className="flex items-center gap-2 shrink-0">
                       {isSold ? (
                         <Badge variant="sold" size="lg">
@@ -422,7 +402,6 @@ export default async function VehicleDetailPage({ params }: PageProps) {
                     </div>
                   </div>
 
-                  {/* Telemetry Strip Instrument Panel */}
                   <div className="pt-4 border-t border-border/80">
                     <SpecificationList
                       columns={4}
@@ -432,7 +411,6 @@ export default async function VehicleDetailPage({ params }: PageProps) {
                   </div>
                 </div>
 
-                {/* Editorial Description */}
                 {vehicle.description && (
                   <div className="mt-8 pt-6 border-t border-border/80 space-y-3">
                     <h3 className="text-xs font-sans font-semibold uppercase tracking-[0.2em] text-gold">
@@ -445,7 +423,7 @@ export default async function VehicleDetailPage({ params }: PageProps) {
                 )}
               </Card>
 
-              {/* Comprehensive Technical Dossier */}
+              {/* Technical Specifications */}
               <Card className="p-6 sm:p-8 bg-graphite border-border">
                 <div className="space-y-6">
                   <div className="flex items-center gap-2">
@@ -472,7 +450,7 @@ export default async function VehicleDetailPage({ params }: PageProps) {
                 </div>
               </Card>
 
-              {/* TORQUENS Verification Guarantee Shield */}
+              {/* Verification Shield */}
               {isVerified && (
                 <Card className="p-6 bg-graphite border-emerald-border/60 relative overflow-hidden">
                   <div className="pointer-events-none absolute -top-16 -right-16 w-48 h-48 bg-emerald/10 rounded-full blur-3xl" />
@@ -515,17 +493,13 @@ export default async function VehicleDetailPage({ params }: PageProps) {
               )}
             </div>
 
-            {/* ============================================================= */}
-            {/* RIGHT COLUMN: Acquisition Card, Dealer Profile & Enquiry Form */}
-            {/* ============================================================= */}
+            {/* Right Column (Sticky Pricing & Enquiry) */}
             <div className="lg:col-span-4 space-y-6">
-              {/* Sticky Acquisition Pricing Card */}
               <div className="sticky top-24 space-y-6">
                 <Card className="p-6 bg-graphite border-gold/30 shadow-goldGlowSm relative overflow-hidden">
                   <div className="pointer-events-none absolute top-0 left-0 right-0 h-0.5 bg-linear-to-r from-transparent via-gold to-transparent" />
 
                   <div className="space-y-5">
-                    {/* Price Header */}
                     <div className="space-y-1">
                       <span className="text-[10px] font-sans uppercase tracking-[0.2em] text-muted">
                         Acquisition Price
@@ -538,7 +512,6 @@ export default async function VehicleDetailPage({ params }: PageProps) {
                       </p>
                     </div>
 
-                    {/* Primary CTA Buttons */}
                     <div className="space-y-2.5 pt-2 border-t border-border/80">
                       <a href="#enquiry" className="block">
                         <Button
@@ -552,23 +525,18 @@ export default async function VehicleDetailPage({ params }: PageProps) {
                         </Button>
                       </a>
 
-                      <div className="grid grid-cols-2 gap-2">
-                        <a href={`tel:${dealer.phone}`} className="block">
-                          <Button
-                            variant="secondary"
-                            size="sm"
-                            fullWidth
-                            className="text-xs py-2.5"
-                          >
-                            Call Dealer
-                          </Button>
-                        </a>
-                        {/* Compare Button with client-side functionality */}
-                        <CompareButtonClient vehicleId={vehicle.id} />
-                      </div>
+                      <a href={`tel:${dealer.phone}`} className="block">
+                        <Button
+                          variant="secondary"
+                          size="sm"
+                          fullWidth
+                          className="text-xs py-2.5"
+                        >
+                          Call Dealer ({dealer.phone})
+                        </Button>
+                      </a>
                     </div>
 
-                    {/* Telemetry Micro Stats */}
                     <div className="p-3 rounded-lg bg-inset border border-border/80 grid grid-cols-3 gap-2 text-center text-xs font-sans">
                       <div>
                         <span className="text-[10px] text-muted uppercase block">
@@ -591,17 +559,15 @@ export default async function VehicleDetailPage({ params }: PageProps) {
                           Enquiries
                         </span>
                         <span className="font-semibold text-primary font-mono mt-0.5 block">
-                          {0}
+                          {vehicle.enquiryCount || 0}
                         </span>
                       </div>
                     </div>
                   </div>
                 </Card>
 
-                {/* Verified Dealer Info Card */}
                 <VehicleDealerInfo dealer={dealer} />
 
-                {/* Enquiry Form Anchor Target */}
                 <div id="enquiry">
                   <VehicleEnquiryForm
                     vehicleId={vehicle.id}
@@ -613,9 +579,6 @@ export default async function VehicleDetailPage({ params }: PageProps) {
             </div>
           </div>
 
-          {/* --------------------------------------------------------------- */}
-          {/* RELATED VEHICLES SECTION                                        */}
-          {/* --------------------------------------------------------------- */}
           {relatedVehicles.length > 0 && (
             <RelatedVehicles
               vehicleId={vehicle.id}

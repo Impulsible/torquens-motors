@@ -1,5 +1,5 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
-'use server';
+
 
 import mongoose, {
   type Model,
@@ -190,6 +190,34 @@ export async function findByIdAndUpdate<T>(
 }
 
 /**
+ * ✅ Updates multiple documents matching the query.
+ */
+export async function updateMany<T>(
+  model: Model<T>,
+  query: Record<string, unknown>,
+  data: Record<string, unknown>
+): Promise<{ modifiedCount: number; matchedCount: number; acknowledged: boolean }> {
+  await connectToDatabase();
+  const result = await model.updateMany(query, data).exec();
+  return {
+    modifiedCount: result.modifiedCount || 0,
+    matchedCount: result.matchedCount || 0,
+    acknowledged: result.acknowledged || false,
+  };
+}
+
+/**
+ * Counts documents matching the query.
+ */
+export async function countDocuments<T>(
+  model: Model<T>,
+  query: Record<string, unknown> = {}
+): Promise<number> {
+  await connectToDatabase();
+  return model.countDocuments(query).exec();
+}
+
+/**
  * Deletes a single document.
  */
 export async function deleteOne<T>(
@@ -226,6 +254,7 @@ export async function deleteMany<T>(
 
 /**
  * Counts documents matching the query.
+ * @deprecated Use countDocuments instead
  */
 export async function count<T>(
   model: Model<T>,
@@ -280,3 +309,30 @@ export async function withTransaction<R>(
     await session.endSession();
   }
 }
+
+/* -------------------------------------------------------------------------- */
+/*                              DEFAULT EXPORT                                */
+/* -------------------------------------------------------------------------- */
+
+// Create the database object
+const database = {
+  findOne,
+  findById,
+  findMany,
+  paginate,
+  create,
+  insertMany,
+  update,
+  findByIdAndUpdate,
+  updateMany,
+  countDocuments,
+  deleteOne,
+  findByIdAndDelete,
+  deleteMany,
+  count,
+  exists,
+  aggregate,
+  withTransaction,
+};
+
+export default database;

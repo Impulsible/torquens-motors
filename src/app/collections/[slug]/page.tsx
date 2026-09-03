@@ -1,15 +1,21 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
-/* eslint-disable @typescript-eslint/no-unused-vars */
+
 import { Metadata } from 'next';
 import { notFound } from 'next/navigation';
 import Link from 'next/link';
 import Image from 'next/image';
 import { ArrowLeft, Car, Sparkles, Grid } from 'lucide-react';
 import { Container } from '@/components/ui/Container';
-import { Card } from '@/components/ui/Card';
 import { Badge } from '@/components/ui/Badge';
-import { Button } from '@/components/ui/Button';
 import { VehicleCard } from '@/components/vehicle/VehicleCard';
+import { SEOHead } from '@/components/seo/SEOHead';
+import { StructuredData } from '@/components/seo/StructuredData';
+import { 
+  generateCollectionSEO, 
+  generateCollectionStructuredData,
+  generateOrganizationStructuredData,
+  generateBreadcrumbStructuredData
+} from '@/lib/seo';
 import { CollectionService } from '@/services/collection.service';
 
 interface CollectionPageProps {
@@ -18,11 +24,7 @@ interface CollectionPageProps {
   }>;
 }
 
-// ─────────────────────────────────────────────────────────────
-// HELPER: Map vehicle to VehicleCard props
-// ─────────────────────────────────────────────────────────────
 function mapVehicleToCardProps(vehicle: any) {
-  // ✅ Fix: Properly handle verified status with correct type
   let verified: boolean | 'UNVERIFIED' | 'VERIFIED' | 'PENDING' = 'UNVERIFIED';
   
   if (vehicle.verified === 'VERIFIED' || vehicle.verified === true) {
@@ -33,9 +35,15 @@ function mapVehicleToCardProps(vehicle: any) {
     verified = 'UNVERIFIED';
   }
 
+  const parsedPower = typeof vehicle.power === 'number' 
+    ? vehicle.power 
+    : typeof vehicle.horsepower === 'number' 
+    ? vehicle.horsepower 
+    : parseInt(vehicle.power || vehicle.horsepower, 10) || 300;
+
   return {
     id: vehicle.id || vehicle._id?.toString() || '',
-    slug: vehicle.slug || '',
+    slug: vehicle.slug || vehicle.id || '',
     make: vehicle.make || '',
     model: vehicle.model || '',
     year: vehicle.year || 0,
@@ -47,14 +55,11 @@ function mapVehicleToCardProps(vehicle: any) {
     fuelType: vehicle.fuelType || 'Petrol',
     verified: verified,
     status: vehicle.status || 'PUBLISHED',
-    location: vehicle.location || 'Lagos',
-    power: typeof vehicle.power === 'number' ? vehicle.power : parseInt(vehicle.power) || 0,
+    location: vehicle.location || 'Lagos, Nigeria',
+    power: parsedPower,
   };
 }
 
-// ─────────────────────────────────────────────────────────────
-// METADATA
-// ─────────────────────────────────────────────────────────────
 export async function generateMetadata({ params }: CollectionPageProps): Promise<Metadata> {
   const { slug } = await params;
   
@@ -64,11 +69,10 @@ export async function generateMetadata({ params }: CollectionPageProps): Promise
     if (!collection) {
       return {
         title: 'Collection Not Found | TORQUENS MOTORS',
-        description: 'The collection you are looking for does not exist.',
+        description: 'The requested collection is not available.',
       };
     }
 
-    // Get collection data with vehicles
     const collectionData = collection as any;
     
     return {
@@ -90,9 +94,6 @@ export async function generateMetadata({ params }: CollectionPageProps): Promise
   }
 }
 
-// ─────────────────────────────────────────────────────────────
-// PAGE COMPONENT
-// ─────────────────────────────────────────────────────────────
 export default async function CollectionDetailPage({ params }: CollectionPageProps) {
   const { slug } = await params;
   
@@ -100,11 +101,9 @@ export default async function CollectionDetailPage({ params }: CollectionPagePro
   let vehicles: any[] = [];
   
   try {
-    // Get collection by slug
     collection = await CollectionService.getCollectionBySlug(slug);
     
     if (collection) {
-      // Get vehicles in the collection
       const collectionData = collection as any;
       if (collectionData.vehicles && collectionData.vehicles.length > 0) {
         vehicles = collectionData.vehicles;
@@ -121,79 +120,101 @@ export default async function CollectionDetailPage({ params }: CollectionPagePro
   const collectionData = collection as any;
   const vehicleCount = vehicles.length || collectionData.vehicleCount || 0;
 
-  return (
-    <main className="min-h-screen pt-20 pb-12">
-      {/* Collection Header */}
-      <section className="relative py-12 md:py-20 overflow-hidden bg-graphite border-b border-border">
-        <div className="absolute inset-0 opacity-10">
-          {collectionData.bannerImage && (
-            <Image
-              src={collectionData.bannerImage}
-              alt={collectionData.name}
-              fill
-              className="object-cover"
-              sizes="100vw"
-            />
-          )}
-        </div>
-        <div className="absolute inset-0 bg-linear-to-r from-graphite via-graphite/90 to-transparent" />
-        
-        <Container className="relative z-10">
-          <div className="max-w-3xl">
-            <Link
-              href="/collections"
-              className="inline-flex items-center gap-2 text-secondary hover:text-primary transition-colors mb-4"
-            >
-              <ArrowLeft size={16} />
-              <span className="text-sm font-sans">Back to Collections</span>
-            </Link>
-            
-            <Badge variant="gold" size="md" className="mb-4">
-              <Sparkles className="h-3 w-3 mr-1" />
-              Curated Collection
-            </Badge>
-            
-            <h1 className="text-4xl md:text-5xl font-serif font-light text-primary">
-              {collectionData.name}
-            </h1>
-            <p className="mt-4 text-secondary font-sans text-sm md:text-base max-w-2xl">
-              {collectionData.description || 'A curated collection of exceptional vehicles.'}
-            </p>
-            <div className="mt-6 flex items-center gap-4">
-              <span className="flex items-center gap-2 text-sm text-muted font-sans">
-                <Car className="h-4 w-4" />
-                {vehicleCount} vehicles
-              </span>
-            </div>
-          </div>
-        </Container>
-      </section>
+  const seoMetadata = generateCollectionSEO(collectionData);
+  const structuredData = generateCollectionStructuredData(collectionData);
+  const organizationData = generateOrganizationStructuredData();
+  const breadcrumbData = generateBreadcrumbStructuredData([
+    { name: 'Home', url: '/' },
+    { name: 'Collections', url: '/collections' },
+    { name: collectionData.name, url: `/collections/${collectionData.slug}` },
+  ]);
 
-      {/* Vehicle Grid */}
-      <Container className="py-12">
-        {vehicles && vehicles.length > 0 ? (
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-            {vehicles.map((vehicle) => (
-              <VehicleCard 
-                key={vehicle.id || vehicle._id?.toString()} 
-                vehicle={mapVehicleToCardProps(vehicle)} 
+  return (
+    <>
+      <SEOHead metadata={seoMetadata} />
+      <StructuredData data={structuredData} />
+      <StructuredData data={breadcrumbData} />
+      <StructuredData data={organizationData} />
+
+      <main className="min-h-screen pt-20 pb-12 bg-obsidian text-primary">
+        {/* Collection Header */}
+        <section className="relative py-12 md:py-20 overflow-hidden bg-graphite border-b border-border">
+          <div className="absolute inset-0 opacity-15">
+            {collectionData.bannerImage && (
+              <Image
+                src={collectionData.bannerImage}
+                alt={collectionData.name}
+                fill
+                className="object-cover"
+                sizes="100vw"
+                priority
               />
-            ))}
+            )}
           </div>
-        ) : (
-          <div className="text-center py-16">
-            <div className="w-16 h-16 rounded-full bg-charcoal flex items-center justify-center mx-auto mb-4">
-              <Grid className="h-8 w-8 text-muted" />
+          <div className="absolute inset-0 bg-linear-to-r from-graphite via-graphite/90 to-transparent" />
+          
+          <Container className="relative z-10">
+            <div className="max-w-3xl space-y-4">
+              <Link
+                href="/collections"
+                className="inline-flex items-center gap-2 text-secondary hover:text-gold transition-colors"
+              >
+                <ArrowLeft size={16} />
+                <span className="text-sm font-sans">Back to Collections</span>
+              </Link>
+              
+              <div>
+                <Badge variant="gold" size="md" className="mb-3">
+                  <Sparkles className="h-3 w-3 mr-1" />
+                  Curated Collection
+                </Badge>
+                
+                <h1 className="text-4xl md:text-5xl font-serif font-light text-primary">
+                  {collectionData.name}
+                </h1>
+              </div>
+
+              <p className="text-secondary font-sans text-sm md:text-base max-w-2xl leading-relaxed">
+                {collectionData.description || 'A curated collection of exceptional vehicles.'}
+              </p>
+
+              <div className="pt-2 flex items-center gap-4">
+                <span className="flex items-center gap-2 text-sm text-gold font-mono font-semibold">
+                  <Car className="h-4 w-4" />
+                  {vehicleCount} Allocated Units
+                </span>
+              </div>
             </div>
-            <h3 className="text-xl font-serif font-light text-primary mb-2">
-              No Vehicles in Collection
-            </h3>
-            <p className="text-secondary font-sans text-sm max-w-md mx-auto">
-              This collection is currently being curated. Check back soon for exceptional vehicles.
-            </p>
-          </div>
-        )}
-      </Container>
-    </main>
+          </Container>
+        </section>
+
+        {/* Vehicle Grid */}
+        <Container className="py-12">
+          {vehicles && vehicles.length > 0 ? (
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+              {vehicles.map((vehicle, idx) => (
+                <div key={vehicle.id || vehicle._id?.toString() || idx}>
+                  <VehicleCard 
+                    vehicle={mapVehicleToCardProps(vehicle)} 
+                  />
+                </div>
+              ))}
+            </div>
+          ) : (
+            <div className="text-center py-16">
+              <div className="w-16 h-16 rounded-full bg-charcoal flex items-center justify-center mx-auto mb-4 border border-border">
+                <Grid className="h-8 w-8 text-muted" />
+              </div>
+              <h3 className="text-xl font-serif font-light text-primary mb-2">
+                No Vehicles Currently in Collection
+              </h3>
+              <p className="text-secondary font-sans text-sm max-w-md mx-auto">
+                This collection is currently being curated. Check back soon for exceptional vehicles.
+              </p>
+            </div>
+          )}
+        </Container>
+      </main>
+    </>
   );
 }

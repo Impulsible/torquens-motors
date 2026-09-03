@@ -1,5 +1,10 @@
-/** @type {import('next').NextConfig} */
-const nextConfig = {
+import type { NextConfig } from 'next';
+
+const nextConfig: NextConfig = {
+  serverExternalPackages: ['mongoose', 'mongodb'],
+
+  turbopack: {},
+
   images: {
     formats: ['image/avif', 'image/webp'],
     remotePatterns: [
@@ -14,16 +19,23 @@ const nextConfig = {
         pathname: '/**',
       },
     ],
+    qualities: [75, 90, 100],
+    dangerouslyAllowSVG: true,
+    contentDispositionType: 'attachment',
+    contentSecurityPolicy: "default-src 'self'; script-src 'none'; sandbox;",
   },
+
   experimental: {
     serverActions: {
       bodySizeLimit: '2mb',
     },
   },
+
   compiler: {
     removeConsole: process.env.NODE_ENV === 'production',
   },
+
   poweredByHeader: false,
 };
 
-module.exports = nextConfig;
+export default nextConfig;

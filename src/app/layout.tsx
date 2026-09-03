@@ -4,6 +4,7 @@ import { Layout } from '../components/layout/Layout';
 import { ComparisonProvider } from '@/contexts/ComparisonContext';
 import { AuthProvider } from '@/components/providers/AuthProvider';
 import { ToastProvider } from '@/hooks/useToast';
+import { SkipLink } from '@/components/ui/SkipLink';
 import './globals.css';
 
 // -----------------------------------------------------------------------------
@@ -69,7 +70,7 @@ export const metadata: Metadata = {
     siteName: 'TORQUENS MOTORS',
     images: [
       {
-        url: '/images/og-torquens.jpg',
+        url: '/images/og-torquens.png',
         width: 1200,
         height: 630,
         alt: 'TORQUENS MOTORS Luxury Automotive Marketplace',
@@ -81,12 +82,12 @@ export const metadata: Metadata = {
     title: 'TORQUENS MOTORS — Engineered to Move.',
     description:
       'The premier digital marketplace for luxury and high-performance vehicles.',
-    images: ['/images/og-torquens.jpg'],
+    images: ['/images/og-torquens.png'],
     creator: '@torquensmotors',
   },
   icons: {
     icon: [
-      { url: '/favicon.svg' },
+      { url: '/images/favicon.png' },
       { url: '/icon.svg', type: 'image/svg+xml' },
     ],
     apple: [{ url: '/apple-touch-icon.png' }],
@@ -109,19 +110,15 @@ export default function RootLayout({ children }: RootLayoutProps) {
       suppressHydrationWarning
     >
       <body className="min-h-screen bg-obsidian text-primary font-sans antialiased selection:bg-gold/20 selection:text-gold flex flex-col justify-between">
-        {/* Skip to Main Content for Accessibility */}
-        <a
-          href="#main-content"
-          className="sr-only focus:not-sr-only focus:fixed focus:top-4 focus:left-4 focus:z-50 focus:px-4 focus:py-2 focus:bg-gold focus:text-obsidian focus:font-semibold focus:rounded-md focus:shadow-lg"
-        >
-          Skip to main content
-        </a>
+        {/* Skip Links for Accessibility */}
+        <SkipLink href="#main-content">Skip to main content</SkipLink>
+        <SkipLink href="#main-navigation">Skip to navigation</SkipLink>
 
-        {/* ✅ ToastProvider must be at the root level to be available everywhere */}
+        {/* ToastProvider must be at the root level to be available everywhere */}
         <ToastProvider>
-          {/* ✅ AuthProvider for NextAuth useSession() */}
+          {/* AuthProvider for NextAuth useSession() */}
           <AuthProvider>
-            {/* ✅ ComparisonProvider for comparison context */}
+            {/* ComparisonProvider for comparison context */}
             <ComparisonProvider>
               <Layout>
                 {children}

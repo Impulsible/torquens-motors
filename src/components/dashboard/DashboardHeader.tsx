@@ -65,15 +65,17 @@ export function DashboardHeader() {
 
           {/* Center: Command Bar */}
           <div className="hidden lg:flex items-center flex-1 max-w-md mx-6">
-            <div className="w-full flex items-center justify-between px-3.5 py-2 rounded-md bg-charcoal/60 hover:bg-charcoal border border-border/70 text-muted hover:text-secondary text-xs font-sans transition-all cursor-pointer group">
-              <div className="flex items-center gap-2.5">
-                <Search className="h-3.5 w-3.5 text-muted group-hover:text-gold transition-colors" />
-                <span>Search collection, VIN, or dossier...</span>
+            <Link href="/vehicles" className="w-full">
+              <div className="w-full flex items-center justify-between px-3.5 py-2 rounded-md bg-charcoal/60 hover:bg-charcoal border border-border/70 text-muted hover:text-secondary text-xs font-sans transition-all cursor-pointer group">
+                <div className="flex items-center gap-2.5">
+                  <Search className="h-3.5 w-3.5 text-muted group-hover:text-gold transition-colors" />
+                  <span>Search collection, VIN, or dossier...</span>
+                </div>
+                <kbd className="hidden xl:inline-flex items-center gap-0.5 px-1.5 py-0.5 text-[10px] font-mono bg-graphite border border-border/80 rounded text-muted">
+                  ⌘K
+                </kbd>
               </div>
-              <kbd className="hidden xl:inline-flex items-center gap-0.5 px-1.5 py-0.5 text-[10px] font-mono bg-graphite border border-border/80 rounded text-muted">
-                ⌘K
-              </kbd>
-            </div>
+            </Link>
           </div>
 
           {/* Right: Actions & User Chip */}

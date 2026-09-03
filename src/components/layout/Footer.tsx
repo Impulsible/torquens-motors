@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-unused-vars */
 'use client';
 
 import React, { useState } from 'react';
@@ -14,6 +15,7 @@ import {
   Sparkles,
 } from 'lucide-react';
 import { FaFacebook, FaTwitter, FaInstagram, FaYoutube } from 'react-icons/fa';
+import { cn } from '@/utils/cn';
 
 export function Footer() {
   const [email, setEmail] = useState('');
@@ -32,17 +34,32 @@ export function Footer() {
     window.scrollTo({ top: 0, behavior: 'smooth' });
   };
 
+  const quickLinks = [
+    { label: 'Browse Vehicles', href: '/vehicles' },
+    { label: 'Curated Collections', href: '/collections' },
+    { label: 'Find Verified Dealers', href: '/dealers' },
+    { label: 'Sell / Trade Vehicle', href: '/sell-trade' },
+    { label: 'Vehicle Comparison Engine', href: '/compare' },
+  ];
+
+  const supportLinks = [
+    { label: 'Marketplace FAQ', href: '/faq' },
+    { label: 'Concierge Contact', href: '/contact' },
+    { label: 'Inspection Verification', href: '/verification' },
+    { label: 'Privacy Policy', href: '/privacy' },
+    { label: 'Terms of Service', href: '/terms' },
+  ];
+
   return (
-    <footer className="bg-obsidian border-t border-border relative overflow-hidden">
+    <footer className="w-full bg-obsidian border-t border-border/70 mt-auto">
       {/* Top Visual Divider */}
-      <div className="relative h-10 w-full overflow-hidden border-b border-border/40">
-        <div className="absolute inset-0 checkerboard-bg opacity-15" />
-        <div className="absolute inset-0 bg-linear-to-b from-obsidian via-transparent to-obsidian" />
+      <div className="relative h-1 w-full overflow-hidden border-b border-border/40">
+        <div className="absolute inset-0 bg-linear-to-r from-transparent via-gold/30 to-transparent" />
       </div>
 
-      <div className="container-torquens pt-12 pb-16">
+      <div className="w-full max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12 lg:py-16">
         {/* NEWSLETTER CAPTURE */}
-        <div className="mb-14 p-6 sm:p-10 rounded-2xl bg-graphite border border-active-border relative overflow-hidden shadow-card">
+        <div className="mb-12 p-6 sm:p-8 lg:p-10 rounded-2xl bg-graphite border border-active-border relative overflow-hidden shadow-card">
           <div
             aria-hidden="true"
             className="pointer-events-none absolute -top-24 -right-24 rounded-full bg-gold/5 blur-3xl"
@@ -85,7 +102,7 @@ export function Footer() {
                   </div>
                   <button
                     type="submit"
-                    className="btn-primary text-xs uppercase tracking-widest font-semibold py-3.5 px-6 shrink-0 flex items-center justify-center gap-2 cursor-pointer"
+                    className="bg-gold text-obsidian font-semibold text-xs uppercase tracking-widest py-3.5 px-6 rounded-md shrink-0 flex items-center justify-center gap-2 hover:bg-gold-hover transition-all duration-300 cursor-pointer"
                   >
                     <span>Request Access</span>
                     <ArrowRight size={14} />
@@ -97,7 +114,7 @@ export function Footer() {
         </div>
 
         {/* TRUST HIGHLIGHTS */}
-        <div className="grid grid-cols-1 sm:grid-cols-3 gap-6 py-8 mb-14 border-y border-border/60">
+        <div className="grid grid-cols-1 sm:grid-cols-3 gap-6 py-8 mb-12 border-y border-border/60">
           <div className="flex items-center gap-4">
             <div className="w-10 h-10 rounded-lg bg-gold/10 border border-gold/20 flex items-center justify-center text-gold shrink-0">
               <ShieldCheck size={20} />
@@ -142,7 +159,8 @@ export function Footer() {
         </div>
 
         {/* NAVIGATION MATRIX */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-10 lg:gap-8 mb-14">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-8 lg:gap-6 mb-12">
+          {/* Brand */}
           <div className="lg:col-span-2 space-y-4">
             <Link href="/" className="inline-block focus:outline-none cursor-pointer">
               <div className="flex flex-col">
@@ -159,58 +177,43 @@ export function Footer() {
               Engineered to Move. Premium automotive marketplace connecting discerning luxury buyers with verified dealers across Africa and beyond.
             </p>
 
-            <div className="pt-2 flex items-center gap-2">
-              <span className="badge-verified">✓ Verified Dealer Network</span>
+            <div className="pt-1 flex items-center gap-2">
+              <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-emerald-bg border border-emerald-border text-emerald text-[10px] font-semibold uppercase tracking-wider">
+                <CheckCircle2 size={12} />
+                Verified Dealer Network
+              </span>
             </div>
 
-            <div className="flex items-center gap-3 pt-2">
-              <a
-                href="#"
-                className="w-9 h-9 rounded-md bg-charcoal border border-border flex items-center justify-center text-secondary hover:text-gold hover:border-gold transition-all duration-300 cursor-pointer"
-                aria-label="Facebook"
-              >
-                <FaFacebook className="w-4 h-4" />
-              </a>
-              <a
-                href="#"
-                className="w-9 h-9 rounded-md bg-charcoal border border-border flex items-center justify-center text-secondary hover:text-gold hover:border-gold transition-all duration-300 cursor-pointer"
-                aria-label="Twitter"
-              >
-                <FaTwitter className="w-4 h-4" />
-              </a>
-              <a
-                href="#"
-                className="w-9 h-9 rounded-md bg-charcoal border border-border flex items-center justify-center text-secondary hover:text-gold hover:border-gold transition-all duration-300 cursor-pointer"
-                aria-label="Instagram"
-              >
-                <FaInstagram className="w-4 h-4" />
-              </a>
-              <a
-                href="#"
-                className="w-9 h-9 rounded-md bg-charcoal border border-border flex items-center justify-center text-secondary hover:text-gold hover:border-gold transition-all duration-300 cursor-pointer"
-                aria-label="Youtube"
-              >
-                <FaYoutube className="w-4 h-4" />
-              </a>
+            <div className="flex items-center gap-2.5 pt-1">
+              {[
+                { Icon: FaFacebook, label: 'Facebook' },
+                { Icon: FaTwitter, label: 'Twitter' },
+                { Icon: FaInstagram, label: 'Instagram' },
+                { Icon: FaYoutube, label: 'Youtube' },
+              ].map(({ Icon, label }) => (
+                <a
+                  key={label}
+                  href="#"
+                  className="w-9 h-9 rounded-md bg-charcoal border border-border flex items-center justify-center text-secondary hover:text-gold hover:border-gold transition-all duration-300 cursor-pointer"
+                  aria-label={label}
+                >
+                  <Icon className="w-4 h-4" />
+                </a>
+              ))}
             </div>
           </div>
 
+          {/* Quick Links */}
           <div>
             <h3 className="text-xs font-sans font-semibold uppercase tracking-[0.2em] text-gold mb-4">
               Quick Links
             </h3>
             <ul className="space-y-2.5">
-              {[
-                { label: 'Browse Vehicles', href: '/vehicles' },
-                { label: 'Curated Collections', href: '/collections' },
-                { label: 'Find Verified Dealers', href: '/dealers' },
-                { label: 'Sell / Trade Vehicle', href: '/sell-trade' },
-                { label: 'Vehicle Comparison Engine', href: '/compare' },
-              ].map((link) => (
+              {quickLinks.map((link) => (
                 <li key={link.label}>
                   <Link
                     href={link.href}
-                    className="text-xs text-secondary hover:text-primary transition-colors font-sans gold-underline inline-block py-0.5 cursor-pointer"
+                    className="text-xs text-secondary hover:text-primary transition-colors font-sans inline-block cursor-pointer"
                   >
                     {link.label}
                   </Link>
@@ -219,22 +222,17 @@ export function Footer() {
             </ul>
           </div>
 
+          {/* Support & Legal */}
           <div>
             <h3 className="text-xs font-sans font-semibold uppercase tracking-[0.2em] text-gold mb-4">
               Support & Legal
             </h3>
             <ul className="space-y-2.5">
-              {[
-                { label: 'Marketplace FAQ', href: '/faq' },
-                { label: 'Concierge Contact', href: '/contact' },
-                { label: 'Inspection Verification', href: '/verification' },
-                { label: 'Privacy Policy', href: '/privacy' },
-                { label: 'Terms of Service', href: '/terms' },
-              ].map((link) => (
+              {supportLinks.map((link) => (
                 <li key={link.label}>
                   <Link
                     href={link.href}
-                    className="text-xs text-secondary hover:text-primary transition-colors font-sans gold-underline inline-block py-0.5 cursor-pointer"
+                    className="text-xs text-secondary hover:text-primary transition-colors font-sans inline-block cursor-pointer"
                   >
                     {link.label}
                   </Link>
@@ -243,33 +241,34 @@ export function Footer() {
             </ul>
           </div>
 
+          {/* Concierge Hubs */}
           <div>
             <h3 className="text-xs font-sans font-semibold uppercase tracking-[0.2em] text-gold mb-4">
               Concierge Hubs
             </h3>
             <ul className="space-y-3">
-              <li className="flex items-start gap-2.5 text-xs text-secondary font-sans">
-                <MapPin className="w-4 h-4 text-gold shrink-0 mt-0.5" />
+              <li className="flex items-start gap-2 text-xs text-secondary font-sans leading-snug">
+                <MapPin className="w-3.5 h-3.5 text-gold shrink-0 mt-0.5" />
                 <div>
                   <span className="text-primary font-medium block">Lagos HQ:</span>
                   <span>Victoria Island, Lagos</span>
                 </div>
               </li>
-              <li className="flex items-start gap-2.5 text-xs text-secondary font-sans">
-                <MapPin className="w-4 h-4 text-gold shrink-0 mt-0.5" />
+              <li className="flex items-start gap-2 text-xs text-secondary font-sans leading-snug">
+                <MapPin className="w-3.5 h-3.5 text-gold shrink-0 mt-0.5" />
                 <div>
                   <span className="text-primary font-medium block">Abuja Hub:</span>
                   <span>Maitama, Abuja, FCT</span>
                 </div>
               </li>
-              <li className="flex items-center gap-2.5 text-xs text-secondary font-sans pt-1">
-                <Phone className="w-4 h-4 text-gold shrink-0" />
-                <a href="tel:+2348001234567" className="hover:text-primary transition-colors cursor-pointer">
+              <li className="flex items-center gap-2 text-xs text-secondary font-sans pt-0.5">
+                <Phone className="w-3.5 h-3.5 text-gold shrink-0" />
+                <a href="tel:+2348001234567" className="hover:text-primary transition-colors cursor-pointer font-mono">
                   +234 800 123 4567
                 </a>
               </li>
-              <li className="flex items-center gap-2.5 text-xs text-secondary font-sans">
-                <Mail className="w-4 h-4 text-gold shrink-0" />
+              <li className="flex items-center gap-2 text-xs text-secondary font-sans">
+                <Mail className="w-3.5 h-3.5 text-gold shrink-0" />
                 <a href="mailto:info@torquens.com" className="hover:text-primary transition-colors cursor-pointer">
                   info@torquens.com
                 </a>

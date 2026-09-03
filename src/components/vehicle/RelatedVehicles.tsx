@@ -5,7 +5,7 @@ import Link from "next/link";
 import { ArrowRight, Sparkles } from "lucide-react";
 
 import { VehicleCard } from "./VehicleCard";
-import { getRelatedVehicles } from "@/services/vehicle.service";
+import { getRelatedVehicles } from "@/actions/vehicles";
 import type { IVehicle } from "@/types";
 import { cn } from "@/utils/cn";
 
@@ -66,11 +66,11 @@ export function RelatedVehicles({
           vehicleId,
           make,
           bodyType,
-          limit,
+          limit
         );
 
         if (isMounted) {
-          setVehicles(results);
+          setVehicles(results || []);
         }
       } catch (error) {
         console.error("Failed to load related inventory:", error);
@@ -98,7 +98,7 @@ export function RelatedVehicles({
     <section
       className={cn(
         "relative py-12 border-t border-border/60 overflow-hidden",
-        className,
+        className
       )}
     >
       {/* Ambient background glow */}
@@ -140,11 +140,12 @@ export function RelatedVehicles({
           /* Cards Grid */
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
             {vehicles.map((vehicle, index) => {
-              const isVerified = vehicle.verified === "VERIFIED" || vehicle.verified === true;
+              const isVerified =
+                vehicle.verified === "VERIFIED" || vehicle.verified === true;
 
               return (
                 <div
-                  key={vehicle.id}
+                  key={vehicle.id || vehicle.slug || index}
                   className="animate-in fade-in slide-in-from-bottom-3 duration-300"
                   style={{ animationDelay: `${index * 60}ms` }}
                 >
@@ -164,7 +165,7 @@ export function RelatedVehicles({
                       verified: isVerified,
                       status: vehicle.status,
                       location: vehicle.location,
-                      power: parsePowerNumber(vehicle.power),
+                      power: parsePowerNumber(vehicle.power || vehicle.horsepower),
                     }}
                     featured={false}
                   />

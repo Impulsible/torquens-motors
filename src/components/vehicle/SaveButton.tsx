@@ -5,7 +5,8 @@ import { useRouter, usePathname } from 'next/navigation';
 import { Heart, Loader2 } from 'lucide-react';
 import { useSession } from 'next-auth/react';
 import { cn } from '@/utils/cn';
-import { toggleSaveVehicle, isVehicleSaved } from '@/actions/saved-vehicles';
+// ✅ Use the correct export name
+import { toggleSaveVehicle, checkIsSaved } from '@/actions/saved-vehicles';
 import { useToast } from '@/hooks/useToast';
 
 export interface SaveButtonProps {
@@ -15,6 +16,7 @@ export interface SaveButtonProps {
   showLabel?: boolean;
   variant?: 'button' | 'icon' | 'glass';
   onSaveChange?: (saved: boolean) => void;
+  initialSaved?: boolean;
 }
 
 const SIZE_CONFIGS = {
@@ -42,13 +44,14 @@ export function SaveButton({
   showLabel = true,
   variant = 'button',
   onSaveChange,
+  initialSaved = false,
 }: SaveButtonProps) {
   const router = useRouter();
   const pathname = usePathname();
   const { status } = useSession();
   const { showToast } = useToast();
 
-  const [isSaved, setIsSaved] = useState(false);
+  const [isSaved, setIsSaved] = useState(initialSaved);
   const [isLoading, setIsLoading] = useState(false);
   const [isInitialized, setIsInitialized] = useState(false);
   const [isAnimating, setIsAnimating] = useState(false);
@@ -60,9 +63,9 @@ export function SaveButton({
     const checkSaved = async () => {
       if (status === 'authenticated' && vehicleId) {
         try {
-          const result = await isVehicleSaved(vehicleId);
+          const result = await checkIsSaved(vehicleId);
           if (isMounted && result.success) {
-            setIsSaved(Boolean(result.saved));
+            setIsSaved(result.data);
           }
         } catch (error) {
           console.error('[SaveButton] Check saved status failed:', error);
@@ -116,11 +119,13 @@ export function SaveButton({
         const result = await toggleSaveVehicle(vehicleId);
 
         if (result.success) {
-          setIsSaved(result.saved);
+          const newSavedState = result.data?.saved || false;
+          setIsSaved(newSavedState);
+          onSaveChange?.(newSavedState);
           showToast({
             type: 'success',
-            title: result.saved ? 'Allocation Bookmarked' : 'Allocation Removed',
-            message: result.saved
+            title: newSavedState ? 'Allocation Bookmarked' : 'Allocation Removed',
+            message: newSavedState
               ? 'Vehicle successfully registered to your private vault.'
               : 'Vehicle removed from your saved portfolio.',
           });
@@ -279,3 +284,5 @@ export function SaveButton({
     </button>
   );
 }
+
+export default SaveButton;

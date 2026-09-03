@@ -1,4 +1,3 @@
-/* eslint-disable @typescript-eslint/no-explicit-any */
 /* eslint-disable react-hooks/set-state-in-effect */
 'use client';
 
@@ -10,8 +9,15 @@ import React, {
   useCallback,
   type ReactNode,
 } from 'react';
-import { ComparisonService } from '@/services/comparison.service';
 import type { Vehicle } from '@/components/vehicle/VehicleCard';
+import {
+  getUserComparisonAction,
+  createComparisonAction,
+  addVehicleToComparisonAction,
+  removeVehicleFromComparisonAction,
+  deleteComparisonAction,
+  getVehicleByIdAction,
+} from '@/actions/comparison';
 
 /* -------------------------------------------------------------------------- */
 /*                                    TYPES                                   */
@@ -40,24 +46,49 @@ export interface ComparisonProviderProps {
 const MAX_VEHICLES = 4;
 const STORAGE_KEY = 'torquens_comparison_vehicles';
 
-// Helper to map IVehicle to Vehicle (ensures power property exists)
-function mapToVehicle(vehicle: any): Vehicle {
+interface RawVehicleDoc {
+  id?: string;
+  _id?: string | { toString(): string };
+  slug?: string;
+  make?: string;
+  model?: string;
+  year?: number;
+  price?: number;
+  currency?: string;
+  mileage?: number;
+  images?: string[];
+  transmission?: string;
+  fuelType?: string;
+  verified?: Vehicle['verified'];
+  status?: Vehicle['status'];
+  location?: string;
+  power?: number;
+  horsepower?: number;
+  [key: string]: unknown;
+}
+
+// Strictly typed mapper from DB document to Vehicle UI interface
+function mapToVehicle(vehicle: RawVehicleDoc): Vehicle {
+  const resolvedId =
+    vehicle.id ||
+    (typeof vehicle._id === 'object' ? vehicle._id?.toString() : vehicle._id) ||
+    '';
+
   return {
-    id: vehicle.id,
-    slug: vehicle.slug,
-    make: vehicle.make,
-    model: vehicle.model,
-    year: vehicle.year,
-    price: vehicle.price,
+    id: String(resolvedId),
+    slug: vehicle.slug || '',
+    make: vehicle.make || '',
+    model: vehicle.model || '',
+    year: vehicle.year || 0,
+    price: vehicle.price || 0,
     currency: vehicle.currency || 'NGN',
-    mileage: vehicle.mileage,
+    mileage: vehicle.mileage || 0,
     images: vehicle.images || [],
-    transmission: vehicle.transmission,
-    fuelType: vehicle.fuelType,
+    transmission: vehicle.transmission || '',
+    fuelType: vehicle.fuelType || '',
     verified: vehicle.verified || 'UNVERIFIED',
     status: vehicle.status || 'AVAILABLE',
-    location: vehicle.location,
-    // Add power field (fallback to horsepower or engine)
+    location: vehicle.location || '',
     power: vehicle.power || vehicle.horsepower || 0,
   };
 }
@@ -75,31 +106,37 @@ export function ComparisonProvider({
   const [isLoading, setIsLoading] = useState<boolean>(false);
   const [comparisonId, setComparisonId] = useState<string | null>(null);
 
-  // 1. Synchronize from DB for logged-in users
+  // 1. Synchronize from DB via Server Actions for authenticated clients
   useEffect(() => {
     if (!userId) return;
+
+    let isMounted = true;
 
     const loadUserComparison = async () => {
       try {
         setIsLoading(true);
-        const comparison = await ComparisonService.getComparisonByUser(userId);
-        if (comparison) {
-          // ✅ Map IVehicle[] to Vehicle[]
-          const mappedVehicles = comparison.vehicles.map(mapToVehicle);
-          setVehicles(mappedVehicles);
-          setComparisonId(comparison.id);
+        const res = await getUserComparisonAction(userId);
+        if (isMounted && res.success && res.data) {
+          const rawVehicles = Array.isArray(res.data.vehicles) ? res.data.vehicles : [];
+          const mapped = rawVehicles.map((v: RawVehicleDoc) => mapToVehicle(v));
+          setVehicles(mapped);
+          setComparisonId(res.data.id || res.data._id || null);
         }
       } catch (error) {
-        console.error('[ComparisonContext] DB load failed:', error);
+        console.error('[ComparisonContext] Server action load failed:', error);
       } finally {
-        setIsLoading(false);
+        if (isMounted) setIsLoading(false);
       }
     };
 
     loadUserComparison();
+
+    return () => {
+      isMounted = false;
+    };
   }, [userId]);
 
-  // 2. Synchronize from localStorage for guest users
+  // 2. Synchronize from localStorage for guest visitors
   useEffect(() => {
     if (userId) return;
 
@@ -108,7 +145,7 @@ export function ComparisonProvider({
       if (stored) {
         const parsed = JSON.parse(stored);
         if (Array.isArray(parsed)) {
-          setVehicles(parsed);
+          setVehicles(parsed.slice(0, MAX_VEHICLES));
         }
       }
     } catch (error) {
@@ -147,34 +184,29 @@ export function ComparisonProvider({
       setIsLoading(true);
       try {
         if (userId) {
-          // Logged-in DB flow
-          const id = comparisonId;
-          if (!id) {
-            // ✅ Fix: Pass owner object, not string
-            const created = await ComparisonService.createComparison(
-              { userId },
-              [vehicleId]
-            );
-            setComparisonId(created.id);
-            // ✅ Map IVehicle[] to Vehicle[]
-            const mappedVehicles = created.vehicles.map(mapToVehicle);
-            setVehicles(mappedVehicles);
+          if (!comparisonId) {
+            const res = await createComparisonAction(userId, [vehicleId]);
+            if (res.success && res.data) {
+              setComparisonId(res.data.id || res.data._id || null);
+              const rawVehicles = Array.isArray(res.data.vehicles) ? res.data.vehicles : [];
+              setVehicles(rawVehicles.map((v: RawVehicleDoc) => mapToVehicle(v)));
+            }
           } else {
-            const updated = await ComparisonService.addVehicleToComparison(id, vehicleId);
-            // ✅ Map IVehicle[] to Vehicle[]
-            const mappedVehicles = updated.vehicles.map(mapToVehicle);
-            setVehicles(mappedVehicles);
+            const res = await addVehicleToComparisonAction(comparisonId, vehicleId);
+            if (res.success && res.data) {
+              const rawVehicles = Array.isArray(res.data.vehicles) ? res.data.vehicles : [];
+              setVehicles(rawVehicles.map((v: RawVehicleDoc) => mapToVehicle(v)));
+            }
           }
         } else {
-          // Guest flow
           if (typeof vehicleOrId !== 'string') {
             setVehicles((prev) => [...prev, vehicleOrId]);
           } else {
-            const response = await fetch(`/api/vehicles/${vehicleId}`);
-            if (!response.ok) throw new Error('Failed to resolve vehicle specification');
-            const fetched = await response.json();
-            // ✅ Map to Vehicle type
-            setVehicles((prev) => [...prev, mapToVehicle(fetched)]);
+            const res = await getVehicleByIdAction(vehicleId);
+            if (!res.success || !res.data) {
+              throw new Error(res.message || 'Failed to resolve vehicle specification');
+            }
+            setVehicles((prev) => [...prev, mapToVehicle(res.data)]);
           }
         }
       } catch (error) {
@@ -193,16 +225,15 @@ export function ComparisonProvider({
       setIsLoading(true);
       try {
         if (userId && comparisonId) {
-          const updated = await ComparisonService.removeVehicleFromComparison(
-            comparisonId,
-            vehicleId
-          );
-          // ✅ Map IVehicle[] to Vehicle[]
-          const mappedVehicles = updated.vehicles.map(mapToVehicle);
-          setVehicles(mappedVehicles);
-          if (updated.vehicles.length === 0) {
-            setComparisonId(null);
-            await ComparisonService.deleteComparison(comparisonId);
+          const res = await removeVehicleFromComparisonAction(comparisonId, vehicleId);
+          if (res.success && res.data) {
+            const rawVehicles = Array.isArray(res.data.vehicles) ? res.data.vehicles : [];
+            const mapped = rawVehicles.map((v: RawVehicleDoc) => mapToVehicle(v));
+            setVehicles(mapped);
+            if (mapped.length === 0) {
+              setComparisonId(null);
+              await deleteComparisonAction(comparisonId);
+            }
           }
         } else {
           setVehicles((prev) => prev.filter((v) => v.id !== vehicleId));
@@ -234,7 +265,7 @@ export function ComparisonProvider({
     setIsLoading(true);
     try {
       if (userId && comparisonId) {
-        await ComparisonService.deleteComparison(comparisonId);
+        await deleteComparisonAction(comparisonId);
         setComparisonId(null);
       }
       setVehicles([]);

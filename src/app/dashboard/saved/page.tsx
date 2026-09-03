@@ -1,7 +1,8 @@
+/* eslint-disable react-hooks/set-state-in-effect */
 /* eslint-disable @typescript-eslint/no-explicit-any */
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import Link from 'next/link';
 import { 
   BookmarkCheck, 
@@ -46,28 +47,28 @@ export default function SavedVehiclesPage() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
-  useEffect(() => {
-    const loadSavedVehicles = async () => {
-      if (!profile) return;
+  const loadSavedVehicles = useCallback(async () => {
+    if (!profile) return;
 
-      try {
-        setLoading(true);
-        setError(null);
-        
-        const result = await getSavedVehicles();
-        
-        if (result.success) {
-          // Map the data to ensure all required fields exist
-          const mappedData = result.data.map((item: any) => ({
-            id: item.id,
-            savedAt: item.savedAt || item.createdAt,
+    try {
+      setLoading(true);
+      setError(null);
+      
+      const result = await getSavedVehicles();
+      
+      if (result.success && Array.isArray(result.data)) {
+        const mappedData = result.data
+          .filter((item: any) => item && item.vehicle)
+          .map((item: any) => ({
+            id: item.id || item._id?.toString(),
+            savedAt: item.savedAt || item.createdAt || new Date(),
             vehicle: {
-              id: item.vehicle.id || item.vehicle._id?.toString(),
-              slug: item.vehicle.slug || `${item.vehicle.make}-${item.vehicle.model}-${item.vehicle.year}`,
-              make: item.vehicle.make,
-              model: item.vehicle.model,
-              year: item.vehicle.year,
-              price: item.vehicle.price,
+              id: item.vehicle.id || item.vehicle._id?.toString() || '',
+              slug: item.vehicle.slug || item.vehicle.id || `${item.vehicle.make}-${item.vehicle.model}-${item.vehicle.year}`,
+              make: item.vehicle.make || 'Unknown Make',
+              model: item.vehicle.model || 'Model',
+              year: item.vehicle.year || new Date().getFullYear(),
+              price: item.vehicle.price || 0,
               currency: item.vehicle.currency || 'NGN',
               mileage: item.vehicle.mileage || 0,
               images: item.vehicle.images || [],
@@ -75,56 +76,63 @@ export default function SavedVehiclesPage() {
               fuelType: item.vehicle.fuelType || 'Petrol',
               verified: item.vehicle.verified === 'VERIFIED' || item.vehicle.verified === true,
               status: item.vehicle.status || 'AVAILABLE',
-              location: item.vehicle.location || 'Lagos',
+              location: item.vehicle.location || 'Lagos, Nigeria',
               power: typeof item.vehicle.power === 'number' 
                 ? item.vehicle.power 
-                : parseInt(item.vehicle.power) || 200,
+                : typeof item.vehicle.horsepower === 'number'
+                ? item.vehicle.horsepower
+                : parseInt(item.vehicle.power || item.vehicle.horsepower, 10) || 300,
             }
           }));
-          
-          setSavedVehicles(mappedData);
-        } else {
-          // Handle error response - use 'message' property
-          const errorMessage = 'message' in result ? result.message : 'Failed to load saved vehicles';
-          setError(errorMessage || 'Failed to load saved vehicles');
-          showToast({
-            type: 'error',
-            title: 'Error loading saved vehicles',
-            message: errorMessage,
-          });
-        }
-      } catch (err) {
-        console.error('Error loading saved vehicles:', err);
-        const errorMessage = err instanceof Error ? err.message : 'An unexpected error occurred';
-        setError(errorMessage);
-        showToast({
-          type: 'error',
-          title: 'Error',
-          message: 'Failed to load your saved vehicles.',
-        });
-      } finally {
-        setLoading(false);
+        
+        setSavedVehicles(mappedData);
+      } else {
+        const errorMessage = 'message' in result ? result.message : 'Failed to load saved vehicles';
+        setError(errorMessage || 'Failed to load saved vehicles');
       }
-    };
+    } catch (err) {
+      console.error('Error loading saved vehicles:', err);
+      const errorMessage = err instanceof Error ? err.message : 'An unexpected error occurred';
+      setError(errorMessage);
+    } finally {
+      setLoading(false);
+    }
+  }, [profile]);
 
+  useEffect(() => {
     if (!profileLoading) {
       loadSavedVehicles();
     }
-  }, [profile, profileLoading, showToast]);
+  }, [profileLoading, loadSavedVehicles]);
 
-  // Loading state
+  const handleFavoriteToggle = async (vehicleId: string) => {
+    try {
+      // Optimistically remove from list
+      setSavedVehicles((prev) => prev.filter((item) => item.vehicle.id !== vehicleId));
+      
+      showToast({
+        type: 'info',
+        title: 'Vault Updated',
+        message: 'Vehicle removed from Vault',
+      });
+    } catch (err) {
+      console.error('Failed to toggle save:', err);
+      // Re-fetch on error
+      loadSavedVehicles();
+    }
+  };
+
   if (profileLoading || loading) {
     return (
       <div className="flex flex-col items-center justify-center min-h-[60vh] space-y-4">
         <Loader2 className="h-10 w-10 text-gold animate-spin" />
         <p className="text-xs text-muted font-mono uppercase tracking-widest">
-          Loading Your Collection...
+          Loading Your Vault Collection...
         </p>
       </div>
     );
   }
 
-  // Error state
   if (error) {
     return (
       <div className="flex flex-col items-center justify-center min-h-[60vh] space-y-4">
@@ -132,7 +140,7 @@ export default function SavedVehiclesPage() {
           <p className="text-sm font-medium">Failed to load saved vehicles</p>
           <p className="text-xs text-muted mt-1">{error}</p>
         </div>
-        <Button variant="secondary" onClick={() => window.location.reload()}>
+        <Button variant="secondary" onClick={() => loadSavedVehicles()}>
           Try Again
         </Button>
       </div>
@@ -152,14 +160,14 @@ export default function SavedVehiclesPage() {
           </div>
           <p className="text-sm text-secondary font-sans">
             {savedVehicles.length === 0 
-              ? 'Your saved collection is empty. Start exploring vehicles to build your list.' 
-              : `You have ${savedVehicles.length} vehicle${savedVehicles.length > 1 ? 's' : ''} saved in your collection.`
+              ? 'Your saved collection is empty. Start exploring vehicles to build your private vault.' 
+              : `You have ${savedVehicles.length} vehicle${savedVehicles.length > 1 ? 's' : ''} saved in your vault collection.`
             }
           </p>
         </div>
 
         <Link href="/vehicles">
-          <Button variant="secondary" size="sm" rightIcon={<ArrowLeft className="h-4 w-4" />}>
+          <Button variant="secondary" size="sm" leftIcon={<ArrowLeft className="h-4 w-4" />}>
             Explore Showroom
           </Button>
         </Link>
@@ -177,7 +185,7 @@ export default function SavedVehiclesPage() {
             vehicles and start building your collection.
           </p>
           <Link href="/vehicles">
-            <Button variant="gold" rightIcon={<Car className="h-4 w-4" />}>
+            <Button variant="gold" leftIcon={<Car className="h-4 w-4" />}>
               Browse Vehicles
             </Button>
           </Link>
@@ -192,6 +200,7 @@ export default function SavedVehiclesPage() {
                 showCompare={true}
                 showSave={true}
                 isFavorited={true}
+                onFavoriteToggle={() => handleFavoriteToggle(item.vehicle.id)}
               />
             </div>
           ))}
