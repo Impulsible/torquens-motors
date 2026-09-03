@@ -17,7 +17,10 @@ const options = {};
 let client: MongoClient;
 let clientPromise: Promise<MongoClient>;
 
-if (uri) {
+// Only create MongoDB client if URI exists and we're on the server
+const isServer = typeof window === 'undefined';
+
+if (isServer && uri) {
   if (process.env.NODE_ENV === "development") {
     const globalWithMongo = global as typeof globalThis & {
       _mongoClientPromise?: Promise<MongoClient>;
@@ -32,9 +35,9 @@ if (uri) {
     clientPromise = client.connect();
   }
 } else {
-  // Prevent build-time crash if environment variables are missing
+  // Prevent build-time crash if environment variables are missing or on client
   clientPromise = Promise.reject(
-    new Error("MONGODB_URI is not defined in environment variables"),
+    new Error(isServer ? "MONGODB_URI is not defined in environment variables" : "MongoDB client not available on client")
   );
 }
 
@@ -133,7 +136,8 @@ if (process.env.GITHUB_ID && process.env.GITHUB_SECRET) {
 // 3. NEXTAUTH CONFIGURATION
 // -----------------------------------------------------------------------------
 export const authConfig: NextAuthOptions = {
-  adapter: MongoDBAdapter(clientPromise),
+  // Only use MongoDB adapter on the server
+  adapter: isServer && uri ? MongoDBAdapter(clientPromise) : undefined,
   session: {
     strategy: "jwt",
     maxAge: 30 * 24 * 60 * 60, // 30 days

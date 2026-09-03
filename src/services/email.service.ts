@@ -1,6 +1,4 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
-'use server';
-
 import { Resend } from 'resend';
 import {
   welcomeEmail,
@@ -24,19 +22,20 @@ import {
 } from '@/emails/templates';
 
 const RESEND_API_KEY = process.env.RESEND_API_KEY;
+const DEFAULT_FROM = process.env.EMAIL_FROM || 'TORQUENS MOTORS <noreply@torquens.com>';
 
 if (!RESEND_API_KEY) {
   console.warn('⚠️ RESEND_API_KEY is not set. Email sending will fail.');
 }
 
-const resend = new Resend(RESEND_API_KEY || 're_dummy');
+const resend = RESEND_API_KEY ? new Resend(RESEND_API_KEY) : null;
 
 export class EmailService {
   static async sendEmail({
     to,
     subject,
     html,
-    from = 'onboarding@resend.dev',
+    from = DEFAULT_FROM,
     replyTo,
   }: {
     to: string;
@@ -49,10 +48,14 @@ export class EmailService {
       console.log('📧 Sending email to:', to);
       console.log('📧 Subject:', subject);
 
-      if (!RESEND_API_KEY) {
+      if (!resend) {
         console.warn('⚠️ Resend API key not configured. Email not sent.');
         console.log('📧 Email content preview:', html.substring(0, 200) + '...');
-        return { id: 'mock-email-id', success: true, message: 'Mock email sent (no API key)' };
+        return { 
+          id: 'mock-email-id', 
+          success: true, 
+          message: 'Mock email sent (no API key)' 
+        };
       }
 
       const emailPayload: any = {
