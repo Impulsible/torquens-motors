@@ -2,8 +2,8 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getServerSession } from 'next-auth';
 import { authConfig } from '@/auth/config';
-// ✅ Fix: Import individual functions from database
-import { findById, update } from '@/services/database';
+// ✅ Change: Use server-only wrapper
+import { findById, update } from '@/lib/database.server';
 import { Vehicle } from '@/models/Vehicle';
 
 export async function PUT(
@@ -39,7 +39,6 @@ export async function PUT(
       );
     }
 
-    // ✅ Fix: Use named imports instead of DatabaseService
     // First verify the vehicle exists and the user has permission
     const vehicle = await findById(Vehicle as any, id, undefined, { lean: true });
     
@@ -85,7 +84,7 @@ export async function PUT(
   }
 }
 
-// ✅ OPTIONAL: DELETE endpoint to remove an image
+// OPTIONAL: DELETE endpoint to remove an image
 export async function DELETE(
   request: NextRequest,
   { params }: { params: Promise<{ id: string }> }
@@ -161,7 +160,7 @@ export async function DELETE(
   }
 }
 
-// ✅ OPTIONAL: POST endpoint to reorder images
+// OPTIONAL: POST endpoint to reorder images
 export async function POST(
   request: NextRequest,
   { params }: { params: Promise<{ id: string }> }

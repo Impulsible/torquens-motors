@@ -3,7 +3,8 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { withSecurity } from '@/lib/api-security';
 import { Vehicle } from '@/models/Vehicle';
-import { paginate } from '@/services/database';
+// ✅ Change: Use server-only wrapper
+import { paginate } from '@/lib/database.server';
 import { ShowroomService } from '@/services/showroom.service';
 import { CarQueryService } from '@/services/carquery.service';
 

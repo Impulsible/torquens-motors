@@ -5,7 +5,8 @@
 import { getServerSession } from 'next-auth';
 import { authConfig } from '@/auth/config';
 import { revalidatePath } from 'next/cache';
-import { findMany, findById, update, create } from '@/services/database';
+// ✅ Change: Use server-only wrapper
+import { findMany, findById, update, create } from '@/lib/database.server';
 import type { IVehicle } from '@/types';
 
 import * as VehicleService from '@/services/vehicle.service';

@@ -1,7 +1,8 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 'use server';
 
-import { findMany } from '@/services/database';
+// ✅ Change: Use server-only wrapper
+import { findMany } from '@/lib/database.server';
 
 export interface PublicDealer {
   id: string;

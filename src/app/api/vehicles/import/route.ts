@@ -4,7 +4,8 @@ import { getServerSession } from 'next-auth';
 import { authConfig } from '@/auth/config';
 import { CarQueryService } from '@/services/carquery.service';
 import { Vehicle } from '@/models/Vehicle';
-import DatabaseService from '@/services/database';
+// ✅ Change: Use server-only wrapper
+import * as DatabaseService from '@/lib/database.server';
 
 const carQuery: any = CarQueryService;
 
