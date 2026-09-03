@@ -371,3 +371,76 @@ export async function searchVehicles(query: string) {
     return [];
   }
 }
+
+// ─────────────────────────────────────────────────────────────
+// DEALER EDIT PAGE SERVER ACTIONS (JSON-based, not FormData)
+// ─────────────────────────────────────────────────────────────
+
+/**
+ * Updates a vehicle using a plain JSON object (for react-hook-form submissions).
+ * Called from the EditVehicleForm client component.
+ */
+export async function updateVehicleData(
+  vehicleId: string,
+  data: Record<string, unknown>
+): Promise<ActionResponse<unknown>> {
+  const session = await getServerSession(authConfig);
+
+  if (!session?.user?.id || (session.user as any).role !== 'DEALER') {
+    return { success: false, message: 'Unauthorized' };
+  }
+
+  try {
+    const { Vehicle } = await import('@/models/Vehicle');
+
+    // Verify ownership
+    const vehicle = await findById<IVehicle>(Vehicle as any, vehicleId, {}, { lean: true });
+    if (!vehicle || String(vehicle.dealer) !== session.user.id) {
+      return { success: false, message: 'Unauthorized: vehicle not owned by dealer' };
+    }
+
+    const updated = await update(Vehicle as any, { _id: vehicleId }, data, { new: true, lean: true });
+
+    revalidatePath('/dealer/inventory');
+    revalidatePath(`/vehicles/${vehicleId}`);
+    return {
+      success: true,
+      message: 'Vehicle updated successfully',
+      data: JSON.parse(JSON.stringify(updated)),
+    };
+  } catch (error) {
+    console.error('Error updating vehicle data:', error);
+    return { success: false, message: 'Failed to update vehicle' };
+  }
+}
+
+/**
+ * Permanently deletes a vehicle record (hard delete for dealer edit page).
+ */
+export async function deleteVehiclePermanent(vehicleId: string): Promise<ActionResponse> {
+  const session = await getServerSession(authConfig);
+
+  if (!session?.user?.id || (session.user as any).role !== 'DEALER') {
+    return { success: false, message: 'Unauthorized' };
+  }
+
+  try {
+    const { Vehicle } = await import('@/models/Vehicle');
+
+    // Verify ownership
+    const vehicle = await findById<IVehicle>(Vehicle as any, vehicleId, {}, { lean: true });
+    if (!vehicle || String(vehicle.dealer) !== session.user.id) {
+      return { success: false, message: 'Unauthorized: vehicle not owned by dealer' };
+    }
+
+    const { deleteOne } = await import('@/lib/database.server');
+    await deleteOne(Vehicle as any, { _id: vehicleId });
+
+    revalidatePath('/dealer/inventory');
+    revalidatePath('/vehicles');
+    return { success: true, message: 'Vehicle permanently deleted' };
+  } catch (error) {
+    console.error('Error permanently deleting vehicle:', error);
+    return { success: false, message: 'Failed to delete vehicle' };
+  }
+}

@@ -1,4 +1,3 @@
-/* eslint-disable @typescript-eslint/no-unused-vars */
 /* eslint-disable react-hooks/set-state-in-effect */
 'use client';
 
@@ -13,19 +12,25 @@ import {
   Car,
   Loader2,
   ChevronRight,
-  Sparkles,
   ShieldCheck,
   CornerDownLeft,
 } from 'lucide-react';
 
 import { Badge } from '@/components/ui/Badge';
 import { cn } from '@/utils/cn';
-import * as VehicleService from '@/services/vehicle.service';
-import type { SearchSuggestion } from '@/services/vehicle.service';
+import { getPopularSearches, getSearchSuggestions } from '@/actions/vehicles';
 
 /* -------------------------------------------------------------------------- */
 /*                                    TYPES                                   */
 /* -------------------------------------------------------------------------- */
+
+export interface SearchSuggestion {
+  type: string;
+  label: string;
+  value: string;
+  image?: string;
+  count?: number;
+}
 
 export interface SearchInputProps {
   className?: string;
@@ -75,8 +80,14 @@ export function SearchInput({
 
   /* ── Load popular + recent on mount ──────────────────────────────────── */
   useEffect(() => {
-    VehicleService.getPopularSearches()
-      .then(setPopularSearches)
+    getPopularSearches()
+      .then((results) => {
+        if (Array.isArray(results) && results.length > 0) {
+          setPopularSearches(results as unknown as string[]);
+        } else {
+          setPopularSearches(['Porsche 911', 'Ferrari', 'AMG G63', 'Range Rover']);
+        }
+      })
       .catch(() => setPopularSearches(['Porsche 911', 'Ferrari', 'AMG G63', 'Range Rover']));
 
     try {
@@ -108,8 +119,8 @@ export function SearchInput({
     }
     setIsLoading(true);
     try {
-      const results = await VehicleService.getSearchSuggestions(q);
-      setSuggestions(results);
+      const results = await getSearchSuggestions(q);
+      setSuggestions(results as unknown as SearchSuggestion[]);
     } catch {
       setSuggestions([]);
     } finally {

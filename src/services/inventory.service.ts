@@ -1,6 +1,7 @@
 /* eslint-disable @typescript-eslint/no-unused-vars */
 /* eslint-disable @typescript-eslint/no-explicit-any */
-// ✅ Remove unused eslint-disable
+import 'server-only';
+
 import { Vehicle, type IVehicleDocument } from '@/models/Vehicle';
 import { 
   findOne,
@@ -39,11 +40,9 @@ export interface InventoryStats {
   averagePrice: number;
 }
 
-// ✅ Helper to convert Mongoose document to IVehicle with proper type handling
 function toIVehicle(doc: any): IVehicle | null {
   if (!doc) return null;
   
-  // Handle dealer properly - convert ObjectId to string if needed
   const dealer = doc.dealer ? 
     (typeof doc.dealer === 'object' && doc.dealer._id) ? 
       doc.dealer._id.toString() : 
@@ -85,9 +84,6 @@ function toIVehicleArray(docs: any[]): IVehicle[] {
 }
 
 export class InventoryService {
-  /**
-   * Get inventory items with filters and pagination
-   */
   static async getInventory(
     dealerId: string,
     filters: InventoryFilters = {},
@@ -96,31 +92,26 @@ export class InventoryService {
   ) {
     const query: any = { dealer: dealerId };
 
-    // Apply status filter
     if (filters.status && filters.status !== 'ALL') {
       query.status = filters.status;
     }
 
-    // Apply verification filter
     if (filters.verified) {
       query.verified = filters.verified;
     }
 
-    // Apply price range
     if (filters.minPrice || filters.maxPrice) {
       query.price = {};
       if (filters.minPrice) query.price.$gte = filters.minPrice;
       if (filters.maxPrice) query.price.$lte = filters.maxPrice;
     }
 
-    // Apply year range
     if (filters.minYear || filters.maxYear) {
       query.year = {};
       if (filters.minYear) query.year.$gte = filters.minYear;
       if (filters.maxYear) query.year.$lte = filters.maxYear;
     }
 
-    // Apply search
     if (filters.search) {
       query.$or = [
         { make: { $regex: filters.search, $options: 'i' } },
@@ -129,25 +120,19 @@ export class InventoryService {
       ];
     }
 
-    // ✅ Use type assertion for Vehicle model
     const result = await paginate<any>(
       Vehicle as any,
       query,
       { page, limit, sort: { createdAt: -1 } }
     );
 
-    // Convert to IVehicle[]
     return {
       data: toIVehicleArray(result.data),
       pagination: result.pagination,
     };
   }
 
-  /**
-   * Get inventory statistics
-   */
   static async getInventoryStats(dealerId: string): Promise<InventoryStats> {
-    // ✅ Use type assertion for aggregate
     const stats = await aggregate<any>(
       Vehicle as any,
       [
@@ -189,7 +174,6 @@ export class InventoryService {
       };
     }
 
-    // Return default stats if no results
     return {
       total: 0,
       published: 0,
@@ -205,29 +189,20 @@ export class InventoryService {
     };
   }
 
-  /**
-   * Get a single vehicle by ID
-   */
   static async getVehicleById(vehicleId: string): Promise<IVehicle | null> {
     const vehicle = await findById<any>(Vehicle as any, vehicleId);
     return toIVehicle(vehicle);
   }
 
-  /**
-   * Create a new vehicle
-   */
   static async createVehicle(data: Partial<IVehicle>): Promise<IVehicle> {
-    // Generate slug
     const slug = `${data.make}-${data.model}-${data.year}`
       .toLowerCase()
       .replace(/[^a-z0-9]+/g, '-')
       .replace(/^-+|-+$/g, '');
 
-    // Check for duplicate slug
     const existing = await findOne<any>(Vehicle as any, { slug });
     let finalSlug = slug;
     if (existing) {
-      // Append random string if slug exists
       const random = Math.random().toString(36).substring(2, 6);
       finalSlug = `${slug}-${random}`;
     }
@@ -245,14 +220,10 @@ export class InventoryService {
     return toIVehicle(vehicle)!;
   }
 
-  /**
-   * Update a vehicle
-   */
   static async updateVehicle(
     vehicleId: string,
     data: Partial<IVehicle>
   ): Promise<IVehicle | null> {
-    // If make, model, or year changed, update slug
     if (data.make || data.model || data.year) {
       const existing = await findById<any>(Vehicle as any, vehicleId);
       if (existing) {
@@ -264,7 +235,6 @@ export class InventoryService {
           .replace(/[^a-z0-9]+/g, '-')
           .replace(/^-+|-+$/g, '');
 
-        // Check for duplicate slug
         const duplicate = await findOne<any>(Vehicle as any, {
           slug,
           _id: { $ne: vehicleId },
@@ -285,17 +255,11 @@ export class InventoryService {
     return toIVehicle(vehicle);
   }
 
-  /**
-   * Delete a vehicle
-   */
   static async deleteVehicle(vehicleId: string): Promise<boolean> {
     const result = await deleteOne<any>(Vehicle as any, { _id: vehicleId });
     return !!result;
   }
 
-  /**
-   * Bulk update vehicle status
-   */
   static async bulkUpdateStatus(
     vehicleIds: string[],
     status: VehicleStatus
@@ -309,9 +273,6 @@ export class InventoryService {
     return result ? vehicleIds.length : 0;
   }
 
-  /**
-   * Bulk delete vehicles
-   */
   static async bulkDelete(vehicleIds: string[]): Promise<number> {
     const result = await deleteMany(Vehicle as any, {
       _id: { $in: vehicleIds },
@@ -319,9 +280,6 @@ export class InventoryService {
     return result.deletedCount || 0;
   }
 
-  /**
-   * Get vehicle analytics
-   */
   static async getVehicleAnalytics(vehicleId: string): Promise<{
     views: number;
     enquiries: number;
@@ -346,9 +304,6 @@ export class InventoryService {
     };
   }
 
-  /**
-   * Get inventory value
-   */
   static async getInventoryValue(dealerId: string): Promise<{
     totalValue: number;
     averageValue: number;
@@ -382,17 +337,9 @@ export class InventoryService {
       };
     }
 
-    return {
-      totalValue: 0,
-      averageValue: 0,
-      highestValue: 0,
-      lowestValue: 0,
-    };
+    return { totalValue: 0, averageValue: 0, highestValue: 0, lowestValue: 0 };
   }
 
-  /**
-   * Get inventory by make distribution
-   */
   static async getMakeDistribution(dealerId: string): Promise<
     Array<{ make: string; count: number }>
   > {
@@ -411,9 +358,6 @@ export class InventoryService {
     }));
   }
 
-  /**
-   * Get inventory status distribution
-   */
   static async getStatusDistribution(dealerId: string): Promise<
     Array<{ status: string; count: number }>
   > {

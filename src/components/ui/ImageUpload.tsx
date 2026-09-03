@@ -1,4 +1,3 @@
-/* eslint-disable @typescript-eslint/no-unused-vars */
 /* eslint-disable react-hooks/set-state-in-effect */
 'use client';
 
@@ -6,19 +5,15 @@ import React, { useState, useCallback, useEffect } from 'react';
 import { useDropzone, FileRejection } from 'react-dropzone';
 import {
   Upload,
-  X,
   Star,
   Trash2,
   Loader2,
-  ImageIcon,
   Sparkles,
   CheckCircle2,
-  AlertCircle,
 } from 'lucide-react';
 import Image from 'next/image';
 import { cn } from '@/utils/cn';
 import { useToast } from '@/hooks/useToast';
-import { CloudinaryService } from '@/services/cloudinary.service';
 
 // ─────────────────────────────────────────────────────────────
 // TYPES & INTERFACES
@@ -113,17 +108,13 @@ export function ImageUpload({
         return;
       }
 
-      // 2. Validate files with Cloudinary Service helper if present
+      // 2. Validate files with client-side MIME check
       const invalidFiles: File[] = [];
+      const allowedMimeTypes = ['image/jpeg', 'image/png', 'image/webp', 'image/avif'];
+
       acceptedFiles.forEach((file) => {
-        try {
-          if (CloudinaryService?.validateImage) {
-            const validation = CloudinaryService.validateImage(file);
-            if (!validation.valid) invalidFiles.push(file);
-          }
-        } catch {
-          // Fallback to MIME check
-          if (!file.type.startsWith('image/')) invalidFiles.push(file);
+        if (!allowedMimeTypes.includes(file.type)) {
+          invalidFiles.push(file);
         }
       });
 
@@ -131,7 +122,7 @@ export function ImageUpload({
         showToast({
           type: 'error',
           title: 'Invalid Format',
-          message: `${invalidFiles.length} file(s) are corrupted or unsupported. Please use PNG, JPEG, or WEBP.`,
+          message: `${invalidFiles.length} file(s) are corrupted or unsupported. Please use PNG, JPEG, WEBP, or AVIF.`,
         });
         return;
       }
