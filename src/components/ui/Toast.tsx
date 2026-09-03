@@ -1,3 +1,5 @@
+'use client';
+
 import React, { useEffect, useState } from 'react';
 import { 
   X, 
@@ -150,3 +152,5 @@ export function Toast({
     </div>
   );
 }
+
+export default Toast;

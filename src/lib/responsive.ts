@@ -1,6 +1,7 @@
+'use client';
+
 /* eslint-disable react-hooks/set-state-in-effect */
 /* eslint-disable @typescript-eslint/no-unused-vars */
-
 import { useState, useEffect, useMemo } from "react";
 
 /**
@@ -40,12 +41,14 @@ export const mediaQueries = {
 export type MediaQueryKey = keyof typeof mediaQueries;
 
 /**
- * Responsive hook for client-side breakpoint detection
+ * Responsive hook for client-side breakpoint detection (SSR-safe)
  */
 export function useBreakpoint(breakpoint: MediaQueryKey): boolean {
   const [matches, setMatches] = useState(false);
 
   useEffect(() => {
+    if (typeof window === 'undefined' || !window.matchMedia) return;
+
     const media = window.matchMedia(mediaQueries[breakpoint]);
     setMatches(media.matches);
 
