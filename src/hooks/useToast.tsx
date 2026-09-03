@@ -1,3 +1,4 @@
+
 'use client';
 
 import React, { useState, useCallback, createContext, useContext, ReactNode } from 'react';
@@ -12,15 +13,16 @@ export interface Toast {
   duration?: number;
 }
 
-interface ToastContextType {
-  [x: string]: any;
-  [x: string]: any;
-  [x: string]: any;
-  error(arg0: string): unknown;
-  success(arg0: string): unknown;
+export type ToastInput = Omit<Toast, 'id'>;
+
+export interface ToastContextType {
   toasts: Toast[];
-  showToast: (toast: Omit<Toast, 'id'>) => void;
+  showToast: (toast: ToastInput) => void;
   hideToast: (id: string) => void;
+  success: (titleOrMessage: string, message?: string) => void;
+  error: (titleOrMessage: string, message?: string) => void;
+  warning: (titleOrMessage: string, message?: string) => void;
+  info: (titleOrMessage: string, message?: string) => void;
 }
 
 const ToastContext = createContext<ToastContextType | undefined>(undefined);
@@ -34,28 +36,86 @@ export function ToastProvider({ children }: { children: ReactNode }) {
   }, []);
 
   // 2. Define showToast with proper deps
-  const showToast = useCallback((toast: Omit<Toast, 'id'>) => {
-    const id = Math.random().toString(36).substring(2, 9);
-    const duration = toast.duration || 5000;
-    const newToast: Toast = { ...toast, id, duration };
-    
-    setToasts((prev) => [...prev, newToast]);
+  const showToast = useCallback(
+    (toast: ToastInput) => {
+      const id = Math.random().toString(36).substring(2, 9);
+      const duration = toast.duration || 5000;
+      const newToast: Toast = { ...toast, id, duration };
 
-    // Automatically dismiss the toast after its duration expires
-    setTimeout(() => {
-      hideToast(id);
-    }, duration);
-  }, [hideToast]);
+      setToasts((prev) => [...prev, newToast]);
+
+      // Automatically dismiss the toast after its duration expires
+      setTimeout(() => {
+        hideToast(id);
+      }, duration);
+    },
+    [hideToast]
+  );
+
+  // 3. Shorthand helper functions
+  const success = useCallback(
+    (titleOrMessage: string, message?: string) => {
+      showToast({
+        type: 'success',
+        title: message ? titleOrMessage : 'Success',
+        message: message || titleOrMessage,
+      });
+    },
+    [showToast]
+  );
+
+  const error = useCallback(
+    (titleOrMessage: string, message?: string) => {
+      showToast({
+        type: 'error',
+        title: message ? titleOrMessage : 'Error',
+        message: message || titleOrMessage,
+      });
+    },
+    [showToast]
+  );
+
+  const warning = useCallback(
+    (titleOrMessage: string, message?: string) => {
+      showToast({
+        type: 'warning',
+        title: message ? titleOrMessage : 'Warning',
+        message: message || titleOrMessage,
+      });
+    },
+    [showToast]
+  );
+
+  const info = useCallback(
+    (titleOrMessage: string, message?: string) => {
+      showToast({
+        type: 'info',
+        title: message ? titleOrMessage : 'Information',
+        message: message || titleOrMessage,
+      });
+    },
+    [showToast]
+  );
 
   return (
-    <ToastContext.Provider value={{ toasts, showToast, hideToast }}>
+    <ToastContext.Provider
+      value={{
+        toasts,
+        showToast,
+        hideToast,
+        success,
+        error,
+        warning,
+        info,
+      }}
+    >
       {children}
       <ToastContainer />
     </ToastContext.Provider>
   );
 }
 
-export function useToast() {
+export function useToast(): ToastContextType {
   const context = useContext(ToastContext);
   if (!context) {
     throw new Error('useToast must be used within a ToastProvider');
@@ -72,9 +132,9 @@ function ToastContainer() {
   if (toasts.length === 0) return null;
 
   return (
-    <div 
-      role="region" 
-      aria-live="polite" 
+    <div
+      role="region"
+      aria-live="polite"
       className="fixed bottom-6 right-6 z-50 flex flex-col gap-3 max-w-md w-full px-4 sm:px-0"
     >
       {toasts.map((toast) => {
@@ -88,10 +148,14 @@ function ToastContainer() {
 
         // Refined champagne/concierge design variant styling
         const variantStyles = {
-          success: 'border-emerald-500/20 bg-emerald-500/[0.04] text-emerald-400 shadow-[0_4px_24px_rgba(16,185,129,0.08)]',
-          error: 'border-red-500/20 bg-red-500/[0.04] text-red-400 shadow-[0_4px_24px_rgba(239,68,68,0.08)]',
-          warning: 'border-gold/20 bg-gold/[0.03] text-gold shadow-[0_4px_24px_rgba(212,175,55,0.08)]',
-          info: 'border-blue-500/20 bg-blue-500/[0.04] text-blue-400 shadow-[0_4px_24px_rgba(59,130,246,0.08)]',
+          success:
+            'border-emerald-500/20 bg-emerald-500/[0.04] text-emerald-400 shadow-[0_4px_24px_rgba(16,185,129,0.08)]',
+          error:
+            'border-red-500/20 bg-red-500/[0.04] text-red-400 shadow-[0_4px_24px_rgba(239,68,68,0.08)]',
+          warning:
+            'border-gold/20 bg-gold/[0.03] text-gold shadow-[0_4px_24px_rgba(212,175,55,0.08)]',
+          info:
+            'border-blue-500/20 bg-blue-500/[0.04] text-blue-400 shadow-[0_4px_24px_rgba(59,130,246,0.08)]',
         }[toast.type];
 
         return (
@@ -104,7 +168,7 @@ function ToastContainer() {
             )}
           >
             <Icon className="h-5 w-5 shrink-0 mt-0.5" />
-            
+
             <div className="flex-1 min-w-0">
               <h4 className="text-xs sm:text-sm font-sans font-semibold tracking-wide text-primary">
                 {toast.title}
@@ -130,3 +194,5 @@ function ToastContainer() {
     </div>
   );
 }
+
+export default useToast;
