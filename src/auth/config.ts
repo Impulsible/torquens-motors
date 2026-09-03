@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 import { MongoDBAdapter } from "@auth/mongodb-adapter";
 import type { NextAuthOptions } from "next-auth";
 import CredentialsProvider from "next-auth/providers/credentials";
@@ -5,22 +6,17 @@ import GoogleProvider from "next-auth/providers/google";
 import GitHubProvider from "next-auth/providers/github";
 import bcrypt from "bcryptjs";
 import { MongoClient } from "mongodb";
-import { connectToDatabase } from "@/lib/mongodb";
-import { User } from "@/models/User";
 
-// -----------------------------------------------------------------------------
-// 1. SINGLETON MONGODB CLIENT PROMISE FOR NEXTAUTH ADAPTER
-// -----------------------------------------------------------------------------
+// Import server-only modules
+import 'server-only';
+
 const uri = process.env.MONGODB_URI;
 const options = {};
 
 let client: MongoClient;
 let clientPromise: Promise<MongoClient>;
 
-// Only create MongoDB client if URI exists and we're on the server
-const isServer = typeof window === 'undefined';
-
-if (isServer && uri) {
+if (uri) {
   if (process.env.NODE_ENV === "development") {
     const globalWithMongo = global as typeof globalThis & {
       _mongoClientPromise?: Promise<MongoClient>;
@@ -35,15 +31,22 @@ if (isServer && uri) {
     clientPromise = client.connect();
   }
 } else {
-  // Prevent build-time crash if environment variables are missing or on client
+  // Handle missing URI
   clientPromise = Promise.reject(
-    new Error(isServer ? "MONGODB_URI is not defined in environment variables" : "MongoDB client not available on client")
+    new Error("MONGODB_URI is not defined in environment variables"),
   );
 }
 
-// -----------------------------------------------------------------------------
-// 2. DYNAMIC PROVIDERS REGISTRATION
-// -----------------------------------------------------------------------------
+// Only import User model on the server
+let User: any;
+const getUserModel = async () => {
+  if (!User) {
+    const { User: UserModel } = await import('@/models/User');
+    User = UserModel;
+  }
+  return User;
+};
+
 const providers: NextAuthOptions["providers"] = [
   CredentialsProvider({
     name: "credentials",
@@ -57,9 +60,9 @@ const providers: NextAuthOptions["providers"] = [
       }
 
       try {
-        await connectToDatabase();
-
-        const user = await User.findOne({
+        const UserModel = await getUserModel();
+        
+        const user = await UserModel.findOne({
           email: credentials.email.toLowerCase().trim(),
         })
           .select("+password")
@@ -91,8 +94,8 @@ const providers: NextAuthOptions["providers"] = [
         }
 
         // Asynchronously update last login
-        User.findByIdAndUpdate(user._id, { lastLogin: new Date() }).catch(
-          (err) => console.error("Failed to update last login date:", err),
+        UserModel.findByIdAndUpdate(user._id, { lastLogin: new Date() }).catch(
+          (err: any) => console.error("Failed to update last login date:", err),
         );
 
         return {
@@ -132,12 +135,8 @@ if (process.env.GITHUB_ID && process.env.GITHUB_SECRET) {
   );
 }
 
-// -----------------------------------------------------------------------------
-// 3. NEXTAUTH CONFIGURATION
-// -----------------------------------------------------------------------------
 export const authConfig: NextAuthOptions = {
-  // Only use MongoDB adapter on the server
-  adapter: isServer && uri ? MongoDBAdapter(clientPromise) : undefined,
+  adapter: MongoDBAdapter(clientPromise),
   session: {
     strategy: "jwt",
     maxAge: 30 * 24 * 60 * 60, // 30 days
@@ -179,7 +178,6 @@ export const authConfig: NextAuthOptions = {
       return session;
     },
   },
-  // ✅ Supports BOTH NEXTAUTH_SECRET and AUTH_SECRET in Vercel
   secret: process.env.NEXTAUTH_SECRET || process.env.AUTH_SECRET,
   debug: process.env.NODE_ENV === "development",
 };

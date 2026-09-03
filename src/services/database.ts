@@ -1,6 +1,5 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 
-
 import mongoose, {
   type Model,
   type UpdateQuery,
@@ -10,6 +9,10 @@ import mongoose, {
   type ClientSession,
 } from 'mongoose';
 import { connectToDatabase } from '../lib/mongodb';
+
+// This file should only be imported on the server
+// Mark as server-only to prevent client imports
+import 'server-only';
 
 /* -------------------------------------------------------------------------- */
 /*                                    TYPES                                   */

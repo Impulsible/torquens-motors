@@ -1,19 +1,15 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
-/* eslint-disable @typescript-eslint/no-require-imports */
 import type { NextConfig } from 'next';
 
 const nextConfig: NextConfig = {
-  // Server external packages - critical for MongoDB and NextAuth
+  // Server external packages - critical for MongoDB
   serverExternalPackages: [
-    'mongoose', 
-    'mongodb', 
+    'mongoose',
+    'mongodb',
     '@auth/mongodb-adapter',
     'next-auth',
-    'bcryptjs'
+    'bcryptjs',
   ],
-
-  // Turbopack configuration
-  turbopack: {},
 
   images: {
     formats: ['image/avif', 'image/webp'],
@@ -29,10 +25,7 @@ const nextConfig: NextConfig = {
         pathname: '/**',
       },
     ],
-    qualities: [75, 90, 100],
     dangerouslyAllowSVG: true,
-    contentDispositionType: 'attachment',
-    contentSecurityPolicy: "default-src 'self'; script-src 'none'; sandbox;",
   },
 
   experimental: {
@@ -57,7 +50,7 @@ const nextConfig: NextConfig = {
         net: false,
         tls: false,
         dns: false,
-        'child_process': false,
+        child_process: false,
         'fs/promises': false,
         'timers/promises': false,
         crypto: false,
@@ -72,20 +65,24 @@ const nextConfig: NextConfig = {
         assert: false,
         querystring: false,
         'mongodb-client-encryption': false,
-        'aws4': false,
-        'snappy': false,
-        'kerberos': false,
+        aws4: false,
+        snappy: false,
+        kerberos: false,
         '@mongodb-js/zstd': false,
       };
-      
-      // Ignore these modules on the client
-      config.plugins = config.plugins || [];
-      config.plugins.push(
-        new (require('webpack').IgnorePlugin)({
-          resourceRegExp: /^(fs|net|tls|dns|child_process|fs\/promises|timers\/promises|crypto|stream|http|https|zlib|url|path|os|util|assert|querystring|mongodb-client-encryption|aws4|snappy|kerberos|@mongodb-js\/zstd)$/,
-        })
-      );
     }
+
+    // Exclude MongoDB from client bundles
+    if (!isServer) {
+      config.externals = config.externals || [];
+      config.externals.push({
+        mongodb: 'mongodb',
+        mongoose: 'mongoose',
+        '@auth/mongodb-adapter': '@auth/mongodb-adapter',
+        'mongodb-client-encryption': 'mongodb-client-encryption',
+      });
+    }
+
     return config;
   },
 };
