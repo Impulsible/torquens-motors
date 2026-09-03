@@ -1,4 +1,8 @@
+'use client';
+
 /* eslint-disable @typescript-eslint/no-explicit-any */
+
+
 import React, { forwardRef, type ElementType, type ComponentPropsWithRef } from 'react';
 import { cn } from '@/utils/cn';
 

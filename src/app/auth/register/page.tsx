@@ -1,7 +1,6 @@
+'use client';
 /* eslint-disable @typescript-eslint/no-explicit-any */
 /* eslint-disable react-hooks/incompatible-library */
-
-'use client';
 
 import React, { useState, Suspense, useEffect } from 'react';
 import Link from 'next/link';

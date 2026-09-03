@@ -1,3 +1,5 @@
+'use client';
+
 import React, { forwardRef, type HTMLAttributes, type ReactNode } from 'react';
 import Link from 'next/link';
 import { Compass } from 'lucide-react';

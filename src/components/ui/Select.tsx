@@ -1,3 +1,5 @@
+'use client';
+
 import React, { forwardRef, useId, type SelectHTMLAttributes, type ReactNode } from 'react';
 import { ChevronDown, AlertCircle } from 'lucide-react';
 import { cn } from '@/utils/cn';

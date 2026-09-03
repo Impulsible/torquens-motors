@@ -1,3 +1,4 @@
+'use client';
 import React, { ElementType, forwardRef } from 'react';
 import { cn } from '@/utils/cn';
 

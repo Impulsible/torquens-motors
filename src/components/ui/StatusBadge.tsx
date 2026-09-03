@@ -1,4 +1,8 @@
+'use client';
+
 /* eslint-disable @typescript-eslint/no-unused-vars */
+
+
 import React, { forwardRef } from "react";
 import { Badge } from "@/components/ui/Badge";
 import { cn } from "@/utils/cn";

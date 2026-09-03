@@ -1,6 +1,8 @@
-import { useEffect } from "react";
+'use client';
 
 /* eslint-disable @typescript-eslint/no-explicit-any */
+import { useEffect } from "react";
+
 export class PerformanceMonitor {
   private static instance: PerformanceMonitor;
   private metrics: Map<string, number[]> = new Map();
@@ -18,6 +20,10 @@ export class PerformanceMonitor {
    * Start timing an operation
    */
   startTimer(operation: string): () => void {
+    if (typeof window === 'undefined' || !window.performance) {
+      return () => {};
+    }
+
     const startTime = performance.now();
 
     return () => {
@@ -112,9 +118,9 @@ export function usePerformanceMonitor(componentName: string) {
   const monitor = PerformanceMonitor.getInstance();
 
   useEffect(() => {
+    if (typeof window === 'undefined') return;
+
     const endTimer = monitor.startTimer(`component:${componentName}:render`);
-    
-    // Track component mount time
     const mountStart = performance.now();
     
     return () => {

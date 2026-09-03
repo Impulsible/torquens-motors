@@ -1,6 +1,5 @@
-/* eslint-disable react-hooks/incompatible-library */
 'use client';
-
+/* eslint-disable react-hooks/incompatible-library */
 import React, { useState } from 'react';
 import Link from 'next/link';
 import { useForm } from 'react-hook-form';

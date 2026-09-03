@@ -1,13 +1,11 @@
 import type { NextConfig } from 'next';
 
 const nextConfig: NextConfig = {
-  // Server external packages - critical for MongoDB
-  // This tells Next.js to not bundle these packages and treat them as external
+  // Server external packages - ONLY server-only backend libraries
   serverExternalPackages: [
     'mongoose',
     'mongodb',
     '@auth/mongodb-adapter',
-    'next-auth',
     'bcryptjs',
   ],
 
@@ -39,8 +37,6 @@ const nextConfig: NextConfig = {
   },
 
   poweredByHeader: false,
-
-  // Empty turbopack config to silence warnings
   turbopack: {},
 };
 

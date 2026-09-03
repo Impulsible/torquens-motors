@@ -1,6 +1,5 @@
-/* eslint-disable react-hooks/set-state-in-effect */
 'use client';
-
+/* eslint-disable react-hooks/set-state-in-effect */
 import React, { useState, useEffect, useMemo, useCallback } from 'react';
 import Link from 'next/link';
 import {

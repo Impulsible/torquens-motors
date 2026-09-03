@@ -1,4 +1,5 @@
-/* eslint-disable @typescript-eslint/no-require-imports */
+
+
 import type { Metadata } from 'next';
 import { Cormorant_Garamond, Plus_Jakarta_Sans } from 'next/font/google';
 import { Layout } from '../components/layout/Layout';
@@ -9,7 +10,7 @@ import { SkipLink } from '@/components/ui/SkipLink';
 import './globals.css';
 
 // -----------------------------------------------------------------------------
-// FONT CONFIGURATION (Optimized for performance & CLS prevention)
+// FONT CONFIGURATION
 // -----------------------------------------------------------------------------
 const cormorant = Cormorant_Garamond({
   subsets: ['latin'],
@@ -26,7 +27,7 @@ const jakarta = Plus_Jakarta_Sans({
 });
 
 // -----------------------------------------------------------------------------
-// PRODUCTION METADATA & SEO (OpenGraph, Twitter Cards, Canonical URLs)
+// PRODUCTION METADATA & SEO
 // -----------------------------------------------------------------------------
 const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL || 'https://torquensmotors.com';
 
@@ -37,7 +38,7 @@ export const metadata: Metadata = {
     template: '%s | TORQUENS MOTORS',
   },
   description:
-    'The premier digital marketplace for luxury, exotic, and high-performance vehicles. Discover verified listings, AI-assisted search, and seamless dealer connections.',
+    'The premier digital marketplace for luxury, exotic, and high-performance vehicles.',
   keywords: [
     'Luxury Cars Nigeria',
     'Exotic Vehicles Lagos',
@@ -97,21 +98,6 @@ export const metadata: Metadata = {
 };
 
 // -----------------------------------------------------------------------------
-// SERVER-ONLY INITIALIZATION
-// -----------------------------------------------------------------------------
-// Only run server-side initialization on the server
-if (typeof window === 'undefined') {
-  try {
-    // Dynamically import server-only modules
-    const { initializeAPIs } = require('@/lib/initialize-apis');
-    initializeAPIs();
-    console.log('✅ Server-side APIs initialized');
-  } catch (error) {
-    console.warn('⚠️ Failed to initialize server-side APIs:', error);
-  }
-}
-
-// -----------------------------------------------------------------------------
 // ROOT LAYOUT COMPONENT
 // -----------------------------------------------------------------------------
 interface RootLayoutProps {
@@ -130,11 +116,11 @@ export default function RootLayout({ children }: RootLayoutProps) {
         <SkipLink href="#main-content">Skip to main content</SkipLink>
         <SkipLink href="#main-navigation">Skip to navigation</SkipLink>
 
-        {/* ToastProvider must be at the root level to be available everywhere */}
+        {/* ToastProvider */}
         <ToastProvider>
-          {/* AuthProvider for NextAuth useSession() */}
+          {/* AuthProvider for NextAuth */}
           <AuthProvider>
-            {/* ComparisonProvider for comparison context */}
+            {/* ComparisonProvider */}
             <ComparisonProvider>
               <Layout>
                 {children}
@@ -143,7 +129,7 @@ export default function RootLayout({ children }: RootLayoutProps) {
           </AuthProvider>
         </ToastProvider>
 
-        {/* Floating Global UI Anchors (Notifications, Compare Tray, Modals) */}
+        {/* Floating Global UI Anchors */}
         <div id="toast-portal" />
         <div id="modal-portal" />
       </body>

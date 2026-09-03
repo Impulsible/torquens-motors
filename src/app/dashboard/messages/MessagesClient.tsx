@@ -1,8 +1,7 @@
+'use client';
 /* eslint-disable @typescript-eslint/no-explicit-any */
 /* eslint-disable @typescript-eslint/no-unused-vars */
 /* eslint-disable @next/next/no-img-element */
-'use client';
-
 import React, { useState } from 'react';
 // ✅ Fix: date-fns is not installed, use native Date methods
 import { 

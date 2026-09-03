@@ -1,7 +1,6 @@
-/* eslint-disable @typescript-eslint/no-unused-vars */
-/* eslint-disable @typescript-eslint/no-explicit-any */
 'use client';
 
+/* eslint-disable @typescript-eslint/no-explicit-any */
 import React, { useMemo } from 'react';
 import Link from 'next/link';
 import Image from 'next/image';
@@ -14,11 +13,6 @@ import {
   Zap,
   Gauge,
   Sparkles,
-  ShieldCheck,
-  Award,
-  Layers,
-  Check,
-  Flame,
   ArrowUpRight,
   Scale,
 } from 'lucide-react';
@@ -33,10 +27,6 @@ import { useComparison } from '@/contexts/ComparisonContext';
 import { formatCurrency } from '@/utils/helpers';
 import { cn } from '@/utils/cn';
 
-/* -------------------------------------------------------------------------- */
-/*                               SPEC CONFIG                                  */
-/* -------------------------------------------------------------------------- */
-
 interface SpecRowConfig {
   key: string;
   label: string;
@@ -49,7 +39,6 @@ const COMPARISON_SPECS: SpecRowConfig[] = [
   { key: 'price', label: 'Acquisition Price', type: 'price', bestMode: 'lowest' },
   { key: 'year', label: 'Model Year', type: 'number', bestMode: 'newest' },
   { key: 'mileage', label: 'Odometer', unit: 'KM', type: 'number', bestMode: 'lowest' },
-  // ✅ Fixed: Use 'power' as the key since vehicle doesn't have 'horsepower'
   { key: 'power', label: 'Power Output', unit: 'BHP', type: 'number', bestMode: 'highest' },
   { key: 'transmission', label: 'Gearbox Spec', type: 'text' },
   { key: 'fuelType', label: 'Powertrain', type: 'text' },
@@ -59,14 +48,9 @@ const COMPARISON_SPECS: SpecRowConfig[] = [
   { key: 'verified', label: 'Provenance', type: 'badge' },
 ];
 
-/* -------------------------------------------------------------------------- */
-/*                           COMPARE PAGE CONTENT                             */
-/* -------------------------------------------------------------------------- */
-
 export default function ComparePageContent() {
   const { vehicles, removeVehicle, clearComparison, count, maxVehicles } = useComparison();
 
-  // Calculate best metrics across vehicles
   const highlights = useMemo(() => {
     if (vehicles.length < 2) return { lowestPriceId: null, highestPowerId: null, lowestMileageId: null };
 
@@ -83,7 +67,6 @@ export default function ComparePageContent() {
         minPrice = v.price;
         lowestPriceId = v.id;
       }
-      // ✅ Use power property or estimate from engine
       const power = v.power || 0;
       if (power > maxPower) {
         maxPower = power;
@@ -98,7 +81,6 @@ export default function ComparePageContent() {
     return { lowestPriceId, highestPowerId, lowestMileageId };
   }, [vehicles]);
 
-  /* ── 1. EMPTY STATE ───────────────────────────────────────────────────── */
   if (vehicles.length === 0) {
     return (
       <main className="min-h-[85vh] flex items-center justify-center pt-24 pb-16 bg-obsidian">
@@ -124,16 +106,12 @@ export default function ComparePageContent() {
 
   return (
     <main className="min-h-screen pt-20 pb-20 bg-obsidian">
-      {/* Ambient background glow */}
       <div
         aria-hidden="true"
         className="pointer-events-none fixed top-1/4 left-1/2 -translate-x-1/2 w-200 h-125 bg-gold/5 blur-[140px] rounded-full"
       />
 
       <Container size="2xl" className="relative z-10">
-        {/* ───────────────────────────────────────────────────────────── */}
-        {/* HEADER & TOOLBAR                                              */}
-        {/* ───────────────────────────────────────────────────────────── */}
         <div className="flex flex-col md:flex-row md:items-end justify-between gap-6 mb-8 pt-4">
           <div className="space-y-2">
             <Link
@@ -182,12 +160,8 @@ export default function ComparePageContent() {
           </div>
         </div>
 
-        {/* ───────────────────────────────────────────────────────────── */}
-        {/* COMPARISON MATRIX TABLE                                       */}
-        {/* ───────────────────────────────────────────────────────────── */}
         <div className="overflow-x-auto rounded-xl border border-border/80 bg-graphite/50 backdrop-blur-xl shadow-dropdown">
           <div className="min-w-225">
-            {/* STICKY VEHICLE CARD HEADER ROW */}
             <div className="grid grid-cols-[200px_repeat(auto-fit,minmax(200px,1fr))] gap-4 p-5 border-b border-border/80 bg-graphite/90 sticky top-16 z-30 backdrop-blur-md">
               <div className="flex flex-col justify-end">
                 <span className="text-[10px] font-mono uppercase tracking-widest text-gold font-semibold">
@@ -207,7 +181,6 @@ export default function ComparePageContent() {
                       padding="sm"
                       className="relative overflow-hidden border-border/80 hover:border-gold/40 transition-colors"
                     >
-                      {/* Remove Button */}
                       <button
                         type="button"
                         onClick={() => removeVehicle(vehicle.id)}
@@ -217,7 +190,6 @@ export default function ComparePageContent() {
                         <X className="h-3.5 w-3.5" />
                       </button>
 
-                      {/* Image Stage */}
                       <div className="relative aspect-16/10 rounded-md overflow-hidden bg-charcoal mb-3">
                         {vehicle.images?.[0] ? (
                           <Image
@@ -240,7 +212,6 @@ export default function ComparePageContent() {
                         )}
                       </div>
 
-                      {/* Vehicle Identity */}
                       <div className="space-y-1">
                         <span className="text-[10px] uppercase tracking-wider font-semibold text-gold font-sans block">
                           {vehicle.make}
@@ -276,7 +247,6 @@ export default function ComparePageContent() {
               })}
             </div>
 
-            {/* SPECIFICATION ROWS */}
             <div className="divide-y divide-border/60">
               {COMPARISON_SPECS.map((spec, specIdx) => (
                 <div
@@ -286,14 +256,11 @@ export default function ComparePageContent() {
                     specIdx % 2 === 0 ? 'bg-charcoal/30' : 'bg-transparent'
                   )}
                 >
-                  {/* Row Label */}
                   <div className="text-xs uppercase tracking-wider font-semibold text-secondary font-sans">
                     {spec.label}
                   </div>
 
-                  {/* Vehicle Values */}
                   {vehicles.map((vehicle) => {
-                    // ✅ Handle different key mappings
                     let rawVal: any;
                     if (spec.key === 'power') {
                       rawVal = vehicle.power || 0;
@@ -341,17 +308,11 @@ export default function ComparePageContent() {
                           </span>
                         )}
 
-                        {spec.type === 'text' && (
-                          <span>{rawVal || '—'}</span>
-                        )}
+                        {spec.type === 'text' && <span>{rawVal || '—'}</span>}
 
                         {spec.type === 'badge' && (
                           <Badge
-                            variant={
-                              rawVal === 'VERIFIED' || rawVal === true
-                                ? 'success'
-                                : 'default'
-                            }
+                            variant={rawVal === 'VERIFIED' || rawVal === true ? 'success' : 'default'}
                             size="sm"
                           >
                             {rawVal === 'VERIFIED' || rawVal === true ? 'Verified' : 'Unverified'}
@@ -377,9 +338,6 @@ export default function ComparePageContent() {
           </div>
         </div>
 
-        {/* ───────────────────────────────────────────────────────────── */}
-        {/* TELEMETRY INSIGHTS CARD                                       */}
-        {/* ───────────────────────────────────────────────────────────── */}
         {vehicles.length > 1 && (
           <div className="mt-10">
             <Card variant="glass" specular ambientGlow padding="lg">
@@ -391,7 +349,6 @@ export default function ComparePageContent() {
               </div>
 
               <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                {/* Lowest Price */}
                 {highlights.lowestPriceId && (
                   <div className="p-4 rounded-lg bg-inset border border-border/60 flex items-start gap-3">
                     <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-md bg-gold/10 text-gold border border-gold/20">
@@ -415,7 +372,6 @@ export default function ComparePageContent() {
                   </div>
                 )}
 
-                {/* Highest Power Output */}
                 {highlights.highestPowerId && (
                   <div className="p-4 rounded-lg bg-inset border border-border/60 flex items-start gap-3">
                     <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-md bg-gold/10 text-gold border border-gold/20">
@@ -436,7 +392,6 @@ export default function ComparePageContent() {
                   </div>
                 )}
 
-                {/* Lowest Odometer */}
                 {highlights.lowestMileageId && (
                   <div className="p-4 rounded-lg bg-inset border border-border/60 flex items-start gap-3">
                     <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-md bg-emerald-bg text-emerald border border-emerald-border">

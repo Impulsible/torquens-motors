@@ -1,3 +1,4 @@
+'use client';
 /* eslint-disable @next/next/no-location-assign-relative-destination */
 'use client';
 

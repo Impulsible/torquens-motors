@@ -1,3 +1,5 @@
+'use client';
+
 import React, { forwardRef, useId, useState, type TextareaHTMLAttributes } from 'react';
 import { AlertCircle } from 'lucide-react';
 import { cn } from '@/utils/cn';

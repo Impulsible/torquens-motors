@@ -1,3 +1,5 @@
+'use client';
+
 import React from 'react';
 import { Skeleton } from '@/components/ui/Skeleton';
 import { cn } from '@/utils/cn';
