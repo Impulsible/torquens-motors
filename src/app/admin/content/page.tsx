@@ -34,7 +34,7 @@ import { useToast } from '@/hooks/useToast';
 import { cn } from '@/utils/cn';
 import {
   getCollections,
-  toggleCollectionPublished,
+  toggleCollectionFeatured,
   deleteCollection,
 } from '@/actions/collections';
 
@@ -650,4 +650,8 @@ export default function AdminContentPage() {
       )}
     </div>
   );
+}
+
+function toggleCollectionPublished(id: string): ActionResponse<unknown> | PromiseLike<ActionResponse<unknown>> {
+  throw new Error('Function not implemented.');
 }
