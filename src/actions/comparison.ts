@@ -15,6 +15,9 @@ export interface ActionResponse<T = undefined> {
 
 export async function getUserComparisonAction(userId: string): Promise<ActionResponse<any>> {
   try {
+    if (!userId) {
+      return { success: false, message: 'User ID is required.' };
+    }
     const comparison = await ComparisonService.getComparisonByUser(userId);
     return {
       success: true,
@@ -85,14 +88,38 @@ export async function deleteComparisonAction(comparisonId: string): Promise<Acti
 }
 
 export async function getVehicleByIdAction(vehicleId: string): Promise<ActionResponse<any>> {
+  if (!vehicleId) {
+    return { success: false, message: 'Vehicle ID or Slug is required.' };
+  }
+
   try {
-    const vehicle = await InventoryService.getVehicleById(vehicleId);
+    let vehicle = null;
+
+    // 1. Attempt lookup by ID (handles MongoDB standard format)
+    try {
+      vehicle = await InventoryService.getVehicleById(vehicleId);
+    } catch (castError) {
+      // If direct ID lookup triggers a Mongoose CastError, check if we can query by slug
+      if (typeof (InventoryService as any).getVehicleBySlug === 'function') {
+        vehicle = await (InventoryService as any).getVehicleBySlug(vehicleId);
+      }
+    }
+
+    // 2. Fallback to slug lookup if standard ID lookup returned nothing
+    if (!vehicle && typeof (InventoryService as any).getVehicleBySlug === 'function') {
+      vehicle = await (InventoryService as any).getVehicleBySlug(vehicleId);
+    }
+
+    if (!vehicle) {
+      return { success: false, message: `Vehicle spec matching "${vehicleId}" could not be resolved.` };
+    }
+
     return {
       success: true,
-      data: vehicle ? JSON.parse(JSON.stringify(vehicle)) : null,
+      data: JSON.parse(JSON.stringify(vehicle)),
     };
   } catch (error) {
     console.error('[ComparisonAction] getVehicleByIdAction error:', error);
-    return { success: false, message: 'Failed to fetch vehicle.' };
+    return { success: false, message: 'Failed to resolve vehicle specification.' };
   }
 }

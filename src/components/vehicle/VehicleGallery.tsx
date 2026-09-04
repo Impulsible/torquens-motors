@@ -1,6 +1,8 @@
+/* eslint-disable react-hooks/set-state-in-effect */
 'use client';
 
 import { useState, useEffect, useCallback, useRef } from 'react';
+import { createPortal } from 'react-dom';
 import Image from 'next/image';
 import {
   ChevronLeft,
@@ -31,15 +33,22 @@ export function VehicleGallery({
   const [isLightboxOpen, setIsLightboxOpen] = useState(false);
   const [imageLoaded, setImageLoaded] = useState(false);
   const [isTransitioning, setIsTransitioning] = useState(false);
+  const [mounted, setMounted] = useState(false);
 
   const thumbStripRef = useRef<HTMLDivElement>(null);
   const lightboxThumbRef = useRef<HTMLDivElement>(null);
+  const closeBtnRef = useRef<HTMLButtonElement>(null);
   const touchStartX = useRef<number | null>(null);
   const touchEndX = useRef<number | null>(null);
 
   const hasImages = images && images.length > 0;
   const hasMultiple = hasImages && images.length > 1;
   const currentImage = hasImages ? images[currentIndex] : null;
+
+  // Hydration safety check for SSR/Portals
+  useEffect(() => {
+    setMounted(true);
+  }, []);
 
   // ---------------------------------------------------------------------------
   // NAVIGATION
@@ -50,7 +59,6 @@ export function VehicleGallery({
       setIsTransitioning(true);
       setImageLoaded(false);
       setCurrentIndex(index);
-      // Brief transition window
       window.setTimeout(() => setIsTransitioning(false), 200);
     },
     [hasImages, currentIndex]
@@ -66,16 +74,21 @@ export function VehicleGallery({
     goTo(currentIndex === images.length - 1 ? 0 : currentIndex + 1);
   }, [currentIndex, images, hasImages, goTo]);
 
+  const openLightbox = useCallback(() => setIsLightboxOpen(true), []);
+  const closeLightbox = useCallback(() => setIsLightboxOpen(false), []);
+
   // ---------------------------------------------------------------------------
   // KEYBOARD CONTROLS
   // ---------------------------------------------------------------------------
   useEffect(() => {
+    if (!isLightboxOpen) return;
+
     const onKeyDown = (e: KeyboardEvent) => {
-      if (e.key === 'Escape' && isLightboxOpen) {
-        setIsLightboxOpen(false);
+      if (e.key === 'Escape') {
+        e.preventDefault();
+        closeLightbox();
         return;
       }
-      // Only navigate when gallery is "active" (lightbox open, or always allow arrows)
       if (e.key === 'ArrowLeft') {
         e.preventDefault();
         handlePrev();
@@ -93,17 +106,21 @@ export function VehicleGallery({
 
     window.addEventListener('keydown', onKeyDown);
     return () => window.removeEventListener('keydown', onKeyDown);
-  }, [handlePrev, handleNext, goTo, isLightboxOpen, hasImages, images]);
+  }, [isLightboxOpen, handlePrev, handleNext, goTo, closeLightbox, hasImages, images]);
 
   // ---------------------------------------------------------------------------
-  // BODY SCROLL LOCK (Lightbox)
+  // BODY SCROLL LOCK + FOCUS CLOSE BUTTON
   // ---------------------------------------------------------------------------
   useEffect(() => {
     if (isLightboxOpen) {
       document.body.style.overflow = 'hidden';
-    } else {
-      document.body.style.overflow = '';
+      const t = window.setTimeout(() => closeBtnRef.current?.focus(), 50);
+      return () => {
+        window.clearTimeout(t);
+        document.body.style.overflow = '';
+      };
     }
+    document.body.style.overflow = '';
     return () => {
       document.body.style.overflow = '';
     };
@@ -186,7 +203,6 @@ export function VehicleGallery({
           onTouchStart={onTouchStart}
           onTouchEnd={onTouchEnd}
         >
-          {/* Skeleton while loading */}
           {!imageLoaded && (
             <div className="absolute inset-0 bg-charcoal animate-pulse z-0" />
           )}
@@ -198,24 +214,23 @@ export function VehicleGallery({
             priority
             className={cn(
               'object-cover transition-all duration-500',
-              imageLoaded && !isTransitioning ? 'opacity-100 scale-100' : 'opacity-0 scale-[1.02]'
+              imageLoaded && !isTransitioning
+                ? 'opacity-100 scale-100'
+                : 'opacity-0 scale-[1.02]'
             )}
             sizes="(max-width: 768px) 100vw, (max-width: 1200px) 60vw, 50vw"
             onLoad={() => setImageLoaded(true)}
             quality={90}
           />
 
-          {/* Ambient vignette for control readability */}
           <div className="pointer-events-none absolute inset-0 bg-linear-to-t from-obsidian/50 via-transparent to-obsidian/20 opacity-80" />
 
-          {/* Top-left badge slot */}
           {badge && (
             <div className="absolute top-3 left-3 z-20 flex flex-wrap gap-1.5">
               {badge}
             </div>
           )}
 
-          {/* Top-right: image count + view all */}
           <div className="absolute top-3 right-3 z-20 flex items-center gap-2">
             <Badge
               variant="default"
@@ -227,7 +242,7 @@ export function VehicleGallery({
             {hasMultiple && (
               <button
                 type="button"
-                onClick={() => setIsLightboxOpen(true)}
+                onClick={openLightbox}
                 className="hidden sm:inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-obsidian/80 backdrop-blur-md border border-border text-[10px] font-sans font-semibold uppercase tracking-wider text-secondary hover:text-gold hover:border-gold/40 transition-all"
               >
                 <Grid3X3 size={12} />
@@ -236,7 +251,6 @@ export function VehicleGallery({
             )}
           </div>
 
-          {/* Side Navigation Arrows */}
           {hasMultiple && (
             <>
               <button
@@ -247,7 +261,7 @@ export function VehicleGallery({
                   'absolute left-3 top-1/2 -translate-y-1/2 z-20',
                   'w-10 h-10 rounded-full flex items-center justify-center',
                   'bg-obsidian/80 backdrop-blur-md border border-border text-primary',
-                  'opacity-0 group-hover:opacity-100 focus:opacity-100',
+                  'opacity-0 group-hover:opacity-100 focus-visible:opacity-100',
                   'hover:border-gold/50 hover:text-gold hover:shadow-goldGlowSm',
                   'transition-all duration-300'
                 )}
@@ -262,7 +276,7 @@ export function VehicleGallery({
                   'absolute right-3 top-1/2 -translate-y-1/2 z-20',
                   'w-10 h-10 rounded-full flex items-center justify-center',
                   'bg-obsidian/80 backdrop-blur-md border border-border text-primary',
-                  'opacity-0 group-hover:opacity-100 focus:opacity-100',
+                  'opacity-0 group-hover:opacity-100 focus-visible:opacity-100',
                   'hover:border-gold/50 hover:text-gold hover:shadow-goldGlowSm',
                   'transition-all duration-300'
                 )}
@@ -272,10 +286,9 @@ export function VehicleGallery({
             </>
           )}
 
-          {/* Bottom-right: Expand fullscreen */}
           <button
             type="button"
-            onClick={() => setIsLightboxOpen(true)}
+            onClick={openLightbox}
             aria-label="Open fullscreen gallery"
             className={cn(
               'absolute bottom-3 right-3 z-20',
@@ -288,7 +301,6 @@ export function VehicleGallery({
             <Maximize2 size={16} />
           </button>
 
-          {/* Progress dots (mobile-friendly, few images) */}
           {hasMultiple && images.length <= 8 && (
             <div className="absolute bottom-3 left-1/2 -translate-x-1/2 z-20 flex items-center gap-1.5 sm:hidden">
               {images.map((_, i) => (
@@ -352,114 +364,177 @@ export function VehicleGallery({
       </div>
 
       {/* ================================================================ */}
-      {/* LIGHTBOX / FULLSCREEN                                            */}
+      {/* LIGHTBOX / FULLSCREEN PORTAL — GUARANTEED OVER TOP HEADER        */}
       {/* ================================================================ */}
-      {isLightboxOpen && (
-        <div
-          className="fixed inset-0 z-100 bg-obsidian/98 backdrop-blur-xl flex flex-col animate-in fade-in duration-200"
-          role="dialog"
-          aria-modal="true"
-          aria-label={`${title} gallery`}
-          onTouchStart={onTouchStart}
-          onTouchEnd={onTouchEnd}
-        >
-          {/* Lightbox Header */}
-          <div className="flex items-center justify-between px-4 sm:px-6 py-4 border-b border-border/60 shrink-0">
-            <div className="min-w-0">
-              <h3 className="text-sm sm:text-base font-serif font-light text-primary truncate">
-                {title}
-              </h3>
-              <p className="text-[11px] font-sans text-muted mt-0.5">
-                {currentIndex + 1} / {images.length}
-              </p>
-            </div>
-
-            <button
-              type="button"
-              onClick={() => setIsLightboxOpen(false)}
-              aria-label="Close gallery"
-              className="w-10 h-10 rounded-full flex items-center justify-center bg-graphite border border-border text-secondary hover:text-primary hover:border-gold/40 transition-all"
-            >
-              <X size={20} />
-            </button>
-          </div>
-
-          {/* Lightbox Stage */}
-          <div className="relative flex-1 min-h-0 flex items-center justify-center p-4 sm:p-8">
-            <div className="relative w-full h-full max-w-6xl mx-auto">
-              <Image
-                src={currentImage!}
-                alt={`${title} — Fullscreen ${currentIndex + 1}`}
-                fill
-                className="object-contain"
-                sizes="100vw"
-                quality={100}
-                priority
-              />
-            </div>
-
-            {hasMultiple && (
-              <>
-                <button
-                  type="button"
-                  onClick={handlePrev}
-                  aria-label="Previous image"
-                  className="absolute left-3 sm:left-6 top-1/2 -translate-y-1/2 w-11 h-11 sm:w-12 sm:h-12 rounded-full flex items-center justify-center bg-graphite/90 border border-border text-primary hover:border-gold hover:text-gold hover:shadow-goldGlowSm transition-all"
-                >
-                  <ChevronLeft size={22} />
-                </button>
-                <button
-                  type="button"
-                  onClick={handleNext}
-                  aria-label="Next image"
-                  className="absolute right-3 sm:right-6 top-1/2 -translate-y-1/2 w-11 h-11 sm:w-12 sm:h-12 rounded-full flex items-center justify-center bg-graphite/90 border border-border text-primary hover:border-gold hover:text-gold hover:shadow-goldGlowSm transition-all"
-                >
-                  <ChevronRight size={22} />
-                </button>
-              </>
-            )}
-          </div>
-
-          {/* Lightbox Filmstrip */}
-          {hasMultiple && (
-            <div className="shrink-0 border-t border-border/60 bg-graphite/50 px-4 py-3">
-              <div
-                ref={lightboxThumbRef}
-                className="flex gap-2 overflow-x-auto no-scrollbar scroll-smooth justify-start sm:justify-center max-w-5xl mx-auto"
-              >
-                {images.map((image, index) => {
-                  const isActive = index === currentIndex;
-                  return (
-                    <button
-                      key={index}
-                      type="button"
-                      data-thumb-index={index}
-                      onClick={() => goTo(index)}
-                      className={cn(
-                        'relative shrink-0 w-16 h-12 sm:w-20 sm:h-14 rounded-md overflow-hidden border-2 transition-all duration-200',
-                        isActive
-                          ? 'border-gold shadow-goldGlowSm'
-                          : 'border-transparent opacity-50 hover:opacity-100'
-                      )}
-                    >
-                      <Image
-                        src={image}
-                        alt=""
-                        fill
-                        className="object-cover"
-                        sizes="80px"
-                      />
-                    </button>
-                  );
-                })}
+      {isLightboxOpen && mounted &&
+        createPortal(
+          <div
+            className="fixed inset-0 z-99999 flex flex-col bg-black/95 backdrop-blur-2xl animate-in fade-in duration-200"
+            role="dialog"
+            aria-modal="true"
+            aria-label={`${title} gallery`}
+          >
+            {/* ── Header bar ─────────────────────────────────────────────── */}
+            <header className="relative z-30 flex items-center justify-between gap-3 px-4 sm:px-8 py-4 shrink-0 bg-linear-to-b from-black via-black/90 to-transparent border-b border-white/10">
+              {/* Title + counter */}
+              <div className="min-w-0 flex-1 pr-2">
+                <h3 className="text-sm sm:text-base font-serif font-light text-white truncate">
+                  {title}
+                </h3>
+                <div className="mt-1 flex items-center gap-2">
+                  <span className="inline-flex items-center rounded-full border border-white/15 bg-white/10 px-2.5 py-0.5 text-[11px] font-mono tracking-widest text-white/90">
+                    {currentIndex + 1}
+                    <span className="mx-1 text-white/40">/</span>
+                    {images.length}
+                  </span>
+                  <span className="hidden sm:inline text-[10px] uppercase tracking-[0.18em] text-white/40 font-sans">
+                    Fullscreen dossier
+                  </span>
+                </div>
               </div>
-              <p className="text-center text-[10px] font-sans text-muted mt-2 hidden sm:block">
-                Use arrow keys to navigate · ESC to close
-              </p>
+
+              {/* CLOSE BUTTON — High contrast, top layer */}
+              <button
+                ref={closeBtnRef}
+                type="button"
+                onClick={closeLightbox}
+                aria-label="Close gallery"
+                className={cn(
+                  'group shrink-0 inline-flex items-center justify-center gap-2',
+                  'h-11 px-4 rounded-full',
+                  'bg-gold text-obsidian font-semibold',
+                  'border border-gold',
+                  'shadow-[0_4px_25px_rgba(212,175,55,0.4)]',
+                  'hover:bg-gold-hover hover:scale-105',
+                  'active:scale-95',
+                  'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-gold',
+                  'transition-all duration-200 cursor-pointer'
+                )}
+              >
+                <X
+                  size={20}
+                  strokeWidth={2.5}
+                  className="transition-transform duration-200 group-hover:rotate-90"
+                />
+                <span className="text-xs font-sans uppercase tracking-[0.16em]">
+                  Close
+                </span>
+                <kbd className="hidden md:inline ml-1 rounded border border-obsidian/30 bg-obsidian/10 px-1.5 py-0.5 text-[10px] font-mono font-bold text-obsidian">
+                  Esc
+                </kbd>
+              </button>
+            </header>
+
+            {/* ── Stage ──────────────────────────────────────────────────── */}
+            <div
+              className="relative flex-1 min-h-0 flex items-center justify-center px-2 sm:px-8 py-4"
+              onClick={closeLightbox}
+              onTouchStart={onTouchStart}
+              onTouchEnd={onTouchEnd}
+            >
+              {/* Image Container */}
+              <div
+                className="relative w-full h-full max-w-6xl mx-auto"
+                onClick={(e) => e.stopPropagation()}
+              >
+                <Image
+                  src={currentImage!}
+                  alt={`${title} — Fullscreen ${currentIndex + 1}`}
+                  fill
+                  className="object-contain select-none"
+                  sizes="100vw"
+                  quality={100}
+                  priority
+                  draggable={false}
+                />
+              </div>
+
+              {/* Prev / Next controls */}
+              {hasMultiple && (
+                <>
+                  <button
+                    type="button"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      handlePrev();
+                    }}
+                    aria-label="Previous image"
+                    className={cn(
+                      'absolute left-3 sm:left-8 top-1/2 -translate-y-1/2 z-30',
+                      'h-12 w-12 sm:h-14 sm:w-14 rounded-full',
+                      'flex items-center justify-center',
+                      'bg-black/60 backdrop-blur-md border border-white/20 text-white',
+                      'hover:bg-gold hover:text-obsidian hover:border-gold',
+                      'active:scale-95',
+                      'transition-all duration-200 shadow-2xl cursor-pointer'
+                    )}
+                  >
+                    <ChevronLeft size={28} />
+                  </button>
+                  <button
+                    type="button"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      handleNext();
+                    }}
+                    aria-label="Next image"
+                    className={cn(
+                      'absolute right-3 sm:right-8 top-1/2 -translate-y-1/2 z-30',
+                      'h-12 w-12 sm:h-14 sm:w-14 rounded-full',
+                      'flex items-center justify-center',
+                      'bg-black/60 backdrop-blur-md border border-white/20 text-white',
+                      'hover:bg-gold hover:text-obsidian hover:border-gold',
+                      'active:scale-95',
+                      'transition-all duration-200 shadow-2xl cursor-pointer'
+                    )}
+                  >
+                    <ChevronRight size={28} />
+                  </button>
+                </>
+              )}
             </div>
-          )}
-        </div>
-      )}
+
+            {/* ── Filmstrip footer ───────────────────────────────────────── */}
+            {hasMultiple && (
+              <footer className="relative z-30 shrink-0 border-t border-white/10 bg-black/90 backdrop-blur-xl px-4 sm:px-8 pt-3 pb-[max(0.75rem,env(safe-area-inset-bottom))]">
+                <div
+                  ref={lightboxThumbRef}
+                  className="flex gap-2 overflow-x-auto no-scrollbar scroll-smooth justify-start sm:justify-center max-w-5xl mx-auto pb-1"
+                >
+                  {images.map((image, index) => {
+                    const isActive = index === currentIndex;
+                    return (
+                      <button
+                        key={index}
+                        type="button"
+                        data-thumb-index={index}
+                        onClick={() => goTo(index)}
+                        aria-label={`View image ${index + 1}`}
+                        aria-current={isActive ? 'true' : undefined}
+                        className={cn(
+                          'relative shrink-0 rounded-lg overflow-hidden border-2 transition-all duration-200 cursor-pointer',
+                          'w-20 h-14 sm:w-24 sm:h-16',
+                          isActive
+                            ? 'border-gold shadow-[0_0_16px_rgba(212,175,55,0.4)] scale-105'
+                            : 'border-transparent opacity-40 hover:opacity-100 hover:border-white/30'
+                        )}
+                      >
+                        <Image
+                          src={image}
+                          alt=""
+                          fill
+                          className="object-cover"
+                          sizes="96px"
+                        />
+                      </button>
+                    );
+                  })}
+                </div>
+              </footer>
+            )}
+          </div>,
+          document.body
+        )}
     </>
   );
 }
